@@ -24,8 +24,7 @@ const canvas = (()=>{
         if(mode === 'create'){
             const planeNormal = vec3.create();
             vec3.scale(planeNormal,rayDir,-1);
-            
-            const planePoint = vec3.fromValues(0,0,0);
+            const planePoint = vec3.fromValues(0,0,0);//near
             const p0Minusl0 = vec3.create();
             vec3.subtract(p0Minusl0,planePoint,l0)
             const t = vec3.dot(p0Minusl0,planeNormal)/vec3.dot(rayDir,planeNormal)

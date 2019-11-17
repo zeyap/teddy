@@ -173,6 +173,9 @@ const webGLUtils = (function(){
             /*
             uniforms = {'name':'value',...}
             */
+            if(vertices==null ||indices==null){
+                return;
+            }
             const shape = createShape(vertices, indices, textureUnits);
             const program =programs[programId];
             
