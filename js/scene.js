@@ -21,7 +21,7 @@ const scene = (()=>{
     function initCamera(){
         const near = 0.1, far = 1000.0;
         const fov = 80; 
-        eye = vec3.fromValues(0,0,1.5);
+        eye = vec3.fromValues(0,0,1.0);
         var up = vec3.fromValues(0.0,1.0,0.0);
         var focal = vec3.fromValues(0,0,0);// look at -z
 
@@ -42,7 +42,6 @@ const scene = (()=>{
     }
 
     function buildObject(equalizedPath){
-        console.log(equalizedPath)
         const triangles = algorithm.Delaunay(equalizedPath);
         object.vertices = triangles.vertices;
         object.indices = triangles.indices;

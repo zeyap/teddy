@@ -22,8 +22,7 @@ const canvas = (()=>{
         vec3.normalize(rayDir,rayDir)
 
         if(mode === 'create'){
-            const planeNormal = vec3.create();
-            vec3.scale(planeNormal,rayDir,-1);
+            const planeNormal = vec3.fromValues(0,0,1);
             const planePoint = vec3.fromValues(0,0,0);//near
             const p0Minusl0 = vec3.create();
             vec3.subtract(p0Minusl0,planePoint,l0)
@@ -35,8 +34,6 @@ const canvas = (()=>{
         }
 
     }
-
-    
 
     function onMouseUp(e){
         mouseDown = false;
@@ -65,5 +62,6 @@ const canvas = (()=>{
 
     return {
         initializeMouseEvents,
+        path,
     };
 })()
