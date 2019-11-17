@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+<div align="center">
+    <canvas id="webglCanvas" style="width:calc(100vw - 20px); height:calc(100vh - 20px); margin: 10px" width=1000 height=1000></canvas>
+</div>
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="js/gl-matrix-min.js"></script>
+<script src="js/preloadjs-0.6.2.min.js"></script>
+<script src="js/assetUtils.js"></script>
+<script src="js/webGLUtils.js"></script>
+<script src="js/algorithm.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/canvas.js"></script>
+
+<script>
+    runWebGL();
+
+    function runWebGL(){
+        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader.frag'},{id:'vert',src:'./shaders/vertexShader.vert'}],(filesLoaded)=>{
+            const data = {}
+            data.fragmentShaderText = filesLoaded[0];
+            data.vertexShaderText = filesLoaded[1];
+            const updateWebGL = getUpdateFunction(data);
+        window.requestAnimationFrame(updateWebGL);
+        })
+    }
+
+    function getUpdateFunction(data){
+        webGLUtils.initializeWegGL('webglCanvas');
+        webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, {
+            uniforms:[
+                {name:'xform_projMat', type:'Matrix4fv'},
+                {name:'xform_viewMat', type:'Matrix4fv'},
+                {name:'xform_modelMat', type:'Matrix4fv'},
+                {name:'lightPos', type:'3fv'},
+            ], 
+            attributes:[
+                {name:'vert_position'},
+                {name:'vert_normal'}
+            ]
+        })
+        canvas.initializeMouseEvents();
+
+        const updateWebGL = ()=>{
+
+            scene.initCamera();
+            scene.initLights();
+            
+            webGLUtils.clearScreen([0.2,0.7,1.0,1.0]);
+
+            webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},'program0', {
+                'xform_projMat':scene.view.projMat,
+                'xform_viewMat':scene.view.viewMat,
+                'xform_modelMat':scene.view.modelMat,
+                lightPos:scene.view.lightPos,
+            }, {positionAttributeId:'vert_position', normalAttributeId:'vert_normal'})
+            
+            
+            window.requestAnimationFrame(updateWebGL);
+        }
+        return updateWebGL;
+    }
+
+</script>
+
+</body>
+</html>
