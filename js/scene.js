@@ -42,13 +42,15 @@ const scene = (()=>{
     }
 
     function buildObject(equalizedPath){
-        const triangles = algorithm.Delaunay(equalizedPath);
-        object.vertices = triangles.vertices;
-        object.indices = triangles.indices;
-        // object.vertices = [1,-0.5,-0.5, 0,0,1,
-        //                 1,0.5,0, 0,0,1,
-        //                 -1,0,0, 0,0,1];
-        // object.indices = [0,1,2];
+        const triangles = algorithm.Delaunay([...equalizedPath]);
+        const prunedTriangles = algorithm.pruneTriangles(triangles, equalizedPath)
+
+        const outputVertices = equalizedPath.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
+
+        const outputIndices = prunedTriangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
+
+        object.vertices = outputVertices;
+        object.indices = outputIndices;
     }
 
     function getNDCxy(clientX,clientY,clientRect){

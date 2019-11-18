@@ -68,6 +68,42 @@ const algorithm = (()=>{
         return windingNumber!==0;
     }
 
+    function removeDoublyDefinedEdges(edgeBuffer){
+        edgeBuffer.sort((e1,e2)=>{
+            if(e1[0]<e2[0]){
+                return -1;
+            }else if(e1[0]>e2[0]){
+                return 1;
+            }
+
+            if(e1[1]<e2[1]){
+                return -1
+            }else if(e1[1]>e2[1]){
+                return 1;
+            }
+            return 0;
+        })
+        
+        const newEdgeBuffer = [];
+        
+        for(let j=0;j<edgeBuffer.length;j++){
+            const curr = edgeBuffer[j]
+            
+            if(j>0 
+            && edgeBuffer[j-1][0]===curr[0] 
+            && edgeBuffer[j-1][1]===curr[1]){
+                if(newEdgeBuffer.length>0 
+                && newEdgeBuffer[newEdgeBuffer.length-1][0]===curr[0] 
+                && newEdgeBuffer[newEdgeBuffer.length-1][1]===curr[1]){
+                    newEdgeBuffer.pop();
+                }
+            }else{
+                newEdgeBuffer.push(curr)
+            }
+        }
+        return newEdgeBuffer;
+    }
+
     function Delaunay(verts){
 
         function triangleCircumcenter(vertIds){
@@ -164,39 +200,7 @@ const algorithm = (()=>{
                 }
             }
             // delete all doubly specified edges from the edge buffer
-            edgeBuffer.sort((e1,e2)=>{
-                if(e1[0]<e2[0]){
-                    return -1;
-                }else if(e1[0]>e2[0]){
-                    return 1;
-                }
-
-                if(e1[1]<e2[1]){
-                    return -1
-                }else if(e1[1]>e2[1]){
-                    return 1;
-                }
-                return 0;
-            })
-            
-            const newEdgeBuffer = [];
-            
-            for(let j=0;j<edgeBuffer.length;j++){
-                const curr = edgeBuffer[j]
-                
-                if(j>0 
-                && edgeBuffer[j-1][0]===curr[0] 
-                && edgeBuffer[j-1][1]===curr[1]){
-                    if(newEdgeBuffer.length>0 
-                    && newEdgeBuffer[newEdgeBuffer.length-1][0]===curr[0] 
-                    && newEdgeBuffer[newEdgeBuffer.length-1][1]===curr[1]){
-                        newEdgeBuffer.pop();
-                    }
-                }else{
-                    newEdgeBuffer.push(curr)
-                }
-            }
-            edgeBuffer = newEdgeBuffer;
+            edgeBuffer = removeDoublyDefinedEdges(edgeBuffer)
             
             // add to the triangle list all triangles formed between the point and the edges of the enclosing polygon
             for(let j=0;j<edgeBuffer.length;j++){
@@ -235,21 +239,158 @@ const algorithm = (()=>{
         }
         
         // remove the supertriangle vertices from the vertex list
-        verts.splice(verts.length-3,3);
+        // verts.splice(verts.length-3,3);
 
-        const outputVertices = verts.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
-        const outputIndices = triangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
+        return triangles;
         
-        return {
-            vertices: outputVertices,
-            indices: outputIndices,
-        };
-        // return triangles;
+    }
+
+    function pruneTriangles(triangles, verts){
+        if(triangles.length<10){
+            return triangles;
+        }
         
+        const edgeToTriangle = {};
+        for(let i=0;i<verts.length;i++){
+            edgeToTriangle[i] = {};
+            for(let j=i+1;j<verts.length;j++){
+                edgeToTriangle[i][j] = [];
+            }
+        }
+
+        // classify triangles, and create a dictionary from edge to triangle
+        for(let i=0;i<triangles.length;i++){
+            const triangle = triangles[i]
+            var vert1Id = triangle.vertIds[0];
+            var vert2Id = triangle.vertIds[1];
+            var vert3Id = triangle.vertIds[2];
+            var minId = Math.min(vert1Id,vert2Id,vert3Id), 
+            maxId = Math.max(vert1Id,vert2Id,vert3Id), 
+            midId = minId^maxId^vert1Id^vert2Id^vert3Id;
+            
+            edgeToTriangle[minId][midId].push(i);
+            edgeToTriangle[midId][maxId].push(i);
+            edgeToTriangle[minId][maxId].push(i);
+
+            triangle.interiorEdges = [];
+            triangle.externalEdges = [];
+            
+            if(minId === 0&&maxId === verts.length-1){
+                triangle.externalEdges.push([minId, maxId])
+            }else{
+                triangle.interiorEdges.push([minId, maxId])
+            }
+            if(minId+1===midId){
+                triangle.externalEdges.push([minId, midId])
+            }else{
+                triangle.interiorEdges.push([minId, midId])
+            }
+            if(midId+1===maxId){
+                triangle.externalEdges.push([midId, maxId])
+            }else{
+                triangle.interiorEdges.push([midId, maxId])
+            }
+
+            switch(triangle.externalEdges.length){
+                case 0:
+                triangle.type = 'J';//junction
+                break;
+                case 1:
+                triangle.type = 'S';//sleeve
+                break;
+                case 2:
+                triangle.type = 'T';//terminal
+                break;
+            }
+        }
+
+        // pruning
+        const prunedTriangles = [];
+        const triangleDeleted = [];
+        for(let i=0;i<triangles.length;i++){
+            
+            var triangle = triangles[i]
+            var triangleId = i;
+            if(triangle.type === 'T'){
+                
+                var edgeBuffer = [];
+                const vertBuffer = [];
+                var interiorEdge = triangle.interiorEdges[0];
+                var semicircleCenter = vec3.create();
+                while(true){
+                    triangleDeleted[triangleId] = true;
+                    // create a semicircle using the interior edge
+                    const inEdgeV1Id = interiorEdge[0],
+                    inEdgeV2Id = interiorEdge[1];
+                    semicircleCenter = vec3.create();
+                    vec3.add(semicircleCenter,verts[inEdgeV1Id],verts[inEdgeV2Id]);
+                    vec3.scale(semicircleCenter,semicircleCenter,0.5);
+
+                    const anotherVertId = triangle.vertIds[0]^triangle.vertIds[1]^triangle.vertIds[2]
+                    ^inEdgeV1Id^inEdgeV2Id;
+
+                    // stop if some vertex is outside the semicircle, or the newly merged triangle is a junction triangle
+                    
+                    vertBuffer.push(anotherVertId);
+                    var anyVertOutOfSemicircle = false;
+                    for(let j=0;j<vertBuffer.length;j++){
+                        
+                        if(vec3.distance(semicircleCenter,verts[vertBuffer[j]])>vec3.distance(semicircleCenter,verts[inEdgeV1Id])){
+                            anyVertOutOfSemicircle = true;
+                            break;
+                        }
+                    }
+                    if(anyVertOutOfSemicircle===true){
+                        break;
+                    }
+
+                    
+                    
+                    if(triangle.type==='T'){
+                        edgeBuffer.push([...triangle.externalEdges[0]]);
+                        edgeBuffer.push([...triangle.externalEdges[1]]);
+                    }else if(triangle.type==='S'){
+                        edgeBuffer.push([...triangle.externalEdges[0]]);
+                    }
+                    
+                    // find the next triangle to merge
+                    const adjacentTriangles = edgeToTriangle[Math.min(inEdgeV1Id,inEdgeV2Id)][Math.max(inEdgeV1Id,inEdgeV2Id)];
+                    
+                    triangleId = adjacentTriangles[0]===i?adjacentTriangles[1]:adjacentTriangles[0];
+                    triangle = triangles[triangleId];
+
+                    if(triangle==null || triangle.type === 'J'){
+                        break;
+                    }
+
+                    interiorEdge = (triangle.interiorEdges[0][0]===inEdgeV1Id&&triangle.interiorEdges[0][1]===inEdgeV2Id)?triangle.interiorEdges[1]:triangle.interiorEdges[0];
+                    
+                }
+                // retriangulate
+                verts.push(semicircleCenter)
+
+                edgeBuffer = removeDoublyDefinedEdges(edgeBuffer)
+
+                for(let j=0;j<edgeBuffer.length;j++){
+                    prunedTriangles.push({
+                        vertIds:[edgeBuffer[j][0],edgeBuffer[j][1],verts.length-1],
+                    })
+                }
+            }
+        }
+
+        for(let i=0;i<triangles.length;i++){
+            if(!triangleDeleted[i]){
+                prunedTriangles.push(triangles[i]);
+            }
+        }
+
+        return prunedTriangles;
     }
 
     return {
         Equalize,
         Delaunay,
+        pruneTriangles,
     }
 })()
