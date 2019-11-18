@@ -39,7 +39,7 @@ const algorithm = (()=>{
 
     function Delaunay(verts){
 
-        function triangleOutCenter(vertIds){
+        function triangleCircumcenter(vertIds){
             
             const x1=verts[vertIds[0]][0], 
                 x2=verts[vertIds[1]][0], 
@@ -85,17 +85,18 @@ const algorithm = (()=>{
         ))
 
         const superTVertIds = [verts.length-1,verts.length-2,verts.length-3];
-        const superTCenter = triangleOutCenter(superTVertIds);
+        const superTCenter = triangleCircumcenter(superTVertIds);
         
         triangles.push({
             vertIds:superTVertIds,
             center:superTCenter,
             radius:vec3.distance(superTCenter,verts[verts.length-1]),
         })
-
-        const edgeBuffer = [];
+        
+        
         for(let i=0;i<verts.length;i++){
-            edgeBuffer[i] = [];
+            var edgeBuffer = [];
+            
             for(let j=0;j<triangles.length;j++){
                 const triangle = triangles[j];
                 
@@ -107,13 +108,13 @@ const algorithm = (()=>{
                     v2Id = triangle.vertIds[1],
                     v3Id = triangle.vertIds[2];
                     if(i!==v1Id && i!==v2Id){
-                        edgeBuffer[i].push([Math.min(v1Id,v2Id),Math.max(v1Id,v2Id)]);
+                        edgeBuffer.push([Math.min(v1Id,v2Id),Math.max(v1Id,v2Id)]);
                     }
                     if(i!==v2Id && i!==v3Id){
-                        edgeBuffer[i].push([Math.min(v2Id,v3Id),Math.max(v2Id,v3Id)]);
+                        edgeBuffer.push([Math.min(v2Id,v3Id),Math.max(v2Id,v3Id)]);
                     }
                     if(i!==v1Id && i!==v3Id){
-                        edgeBuffer[i].push([Math.min(v3Id,v1Id),Math.max(v3Id,v1Id)]);
+                        edgeBuffer.push([Math.min(v3Id,v1Id),Math.max(v3Id,v1Id)]);
                     }
 
                     triangles.splice(j,1);
@@ -121,7 +122,7 @@ const algorithm = (()=>{
                 }
             }
             // delete all doubly specified edges from the edge buffer
-            edgeBuffer[i].sort((e1,e2)=>{
+            edgeBuffer.sort((e1,e2)=>{
                 if(e1[0]<e2[0]){
                     return -1;
                 }else if(e1[0]>e2[0]){
@@ -136,22 +137,44 @@ const algorithm = (()=>{
                 return 0;
             })
             
-            // add to the triangle list all triangles formed between the point and the edges of the enclosing polygon
-            for(let j=0;j<edgeBuffer[i].length;j++){
-                // skip doubly specified edges
-                if(j>0 && edgeBuffer[i][j-1][0]===edgeBuffer[i][j][0] && edgeBuffer[i][j-1][1]===edgeBuffer[i][j][1]){
-                    continue;
-                }
-                const vertIds = [i,edgeBuffer[i][j][0],edgeBuffer[i][j][1]];
+            const newEdgeBuffer = [];
+            
+            for(let j=0;j<edgeBuffer.length;j++){
+                const curr = edgeBuffer[j]
                 
-                const center = triangleOutCenter(vertIds);
+                if(j>0 
+                && edgeBuffer[j-1][0]===curr[0] 
+                && edgeBuffer[j-1][1]===curr[1]){
+                    if(newEdgeBuffer.length>0 
+                    && newEdgeBuffer[newEdgeBuffer.length-1][0]===curr[0] 
+                    && newEdgeBuffer[newEdgeBuffer.length-1][1]===curr[1]){
+                        newEdgeBuffer.pop();
+                    }
+                }else{
+                    newEdgeBuffer.push(curr)
+                }
+            }
+            edgeBuffer = newEdgeBuffer;
+            
+            // add to the triangle list all triangles formed between the point and the edges of the enclosing polygon
+            for(let j=0;j<edgeBuffer.length;j++){
+                
+                const vertIds = [i,edgeBuffer[j][0],edgeBuffer[j][1]];
+                
+                const center = triangleCircumcenter(vertIds);
 
                 const radius = vec3.distance(center,verts[i]);
+                if(isNaN(radius)){
+                    // 3 verts are in a line
+                    continue;
+                }
+                
                 const newTriangle = {
                     vertIds,
                     center,
                     radius,
                 }
+                
                 triangles.push(newTriangle);
             }
         }
@@ -169,7 +192,7 @@ const algorithm = (()=>{
         //    remove the supertriangle vertices from the vertex list
         verts.splice(verts.length-3,3);
         // console.log(verts.length)
-        const outputVertices = verts.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2], 0,0,1]),[]);
+        const outputVertices = verts.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
         const outputIndices = triangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
         // console.log(outputVertices.length/6,Math.max(...outputIndices))
         

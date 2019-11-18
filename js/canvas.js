@@ -38,7 +38,7 @@ const canvas = (()=>{
     function onMouseUp(e){
         mouseDown = false;
         const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.2)
+        algorithm.Equalize(equalizedPath,path,0.1)
         scene.buildObject(equalizedPath);
     }
 

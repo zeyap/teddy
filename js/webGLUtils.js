@@ -59,6 +59,30 @@ const webGLUtils = (function(){
         return shape;
     };
 
+    function drawWireframe(vertices, indices, program, positionAttrId){
+        const vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        
+        for(let start = 0; start<=indices.length-3;start+=3){
+            const indexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices.slice(start, start+3)),gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.enableVertexAttribArray(program[positionAttrId]);
+            gl.vertexAttribPointer(program[positionAttrId], 3, gl.FLOAT, false, 4*3, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        }
+        
+    }
+
     function drawTriangles(program, shape, positionAttrId, textureAttrId, normalAttrId){
         const stride = 4*(3+(textureAttrId!=null?2:0)+(normalAttrId!=null?3:0));
         // vertex (position / texCoord)
@@ -67,12 +91,13 @@ const webGLUtils = (function(){
         gl.vertexAttribPointer(program[positionAttrId], 3, gl.FLOAT, false, stride, 0);
 
         if(textureAttrId!=null){
+            const offset = 4*3;
             gl.enableVertexAttribArray(program[textureAttrId]);
-            gl.vertexAttribPointer(program[textureAttrId], 2, gl.FLOAT, false, stride, 4*3);
+            gl.vertexAttribPointer(program[textureAttrId], 2, gl.FLOAT, false, stride, offset);
         }
         
         if(normalAttrId!=null){
-            const offset = 4*((textureAttrId!=null?2:0)+3);
+            const offset = 4*(3+(textureAttrId!=null?2:0));
             gl.enableVertexAttribArray(program[normalAttrId]);
             gl.vertexAttribPointer(program[normalAttrId], 3, gl.FLOAT, false, stride, offset);
         }
@@ -167,6 +192,7 @@ const webGLUtils = (function(){
 
         drawShape: function(vertices, indices, textureUnits, programId, uniforms, {
             positionAttributeId,
+            barycentricAttributeId,
             textureAttributeId,
             normalAttributeId,
         }){
@@ -176,21 +202,23 @@ const webGLUtils = (function(){
             if(vertices==null ||indices==null){
                 return;
             }
-            const shape = createShape(vertices, indices, textureUnits);
+            // const shape = createShape(vertices, indices, textureUnits);
             const program =programs[programId];
             
             gl.useProgram(program)
 
-            for(let id in shape.textures){
-                gl.activeTexture(gl.TEXTURE0+parseInt(id));
-                gl.bindTexture(gl.TEXTURE_2D, shape.textures[id]);
-            }
+            // for(let id in shape.textures){
+            //     gl.activeTexture(gl.TEXTURE0+parseInt(id));
+            //     gl.bindTexture(gl.TEXTURE_2D, shape.textures[id]);
+            // }
             for(let uniformName in uniforms){
                 const value = uniforms[uniformName];
                 setUniform(program, uniformName, value)
             }
 
-            drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
+            // drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
+            drawWireframe(vertices, indices, program, positionAttributeId);
+            
             gl.useProgram(null)
         },
 

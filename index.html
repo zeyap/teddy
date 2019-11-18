@@ -31,7 +31,7 @@
     runWebGL();
 
     function runWebGL(){
-        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader.frag'},{id:'vert',src:'./shaders/vertexShader.vert'}],(filesLoaded)=>{
+        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader_wireframe.frag'},{id:'vert',src:'./shaders/vertexShader_wireframe.vert'}],(filesLoaded)=>{
             const data = {}
             data.fragmentShaderText = filesLoaded[0];
             data.vertexShaderText = filesLoaded[1];
@@ -42,18 +42,30 @@
 
     function getUpdateFunction(data){
         webGLUtils.initializeWegGL('webglCanvas');
-        webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, {
+        webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, 
+        // {
+        //     uniforms:[
+        //         {name:'xform_projMat', type:'Matrix4fv'},
+        //         {name:'xform_viewMat', type:'Matrix4fv'},
+        //         {name:'xform_modelMat', type:'Matrix4fv'},
+        //         {name:'lightPos', type:'3fv'},
+        //     ], 
+        //     attributes:[
+        //         {name:'vert_position'},
+        //         {name:'vert_normal'}
+        //     ]
+        // }
+        {
             uniforms:[
                 {name:'xform_projMat', type:'Matrix4fv'},
                 {name:'xform_viewMat', type:'Matrix4fv'},
                 {name:'xform_modelMat', type:'Matrix4fv'},
-                {name:'lightPos', type:'3fv'},
             ], 
             attributes:[
                 {name:'vert_position'},
-                {name:'vert_normal'}
             ]
-        })
+        }
+        )
         canvas.initializeMouseEvents();
 
         const updateWebGL = ()=>{
@@ -67,8 +79,7 @@
                 'xform_projMat':scene.view.projMat,
                 'xform_viewMat':scene.view.viewMat,
                 'xform_modelMat':scene.view.modelMat,
-                lightPos:scene.view.lightPos,
-            }, {positionAttributeId:'vert_position', normalAttributeId:'vert_normal'})
+            }, {positionAttributeId:'vert_position'})
             
             
             window.requestAnimationFrame(updateWebGL);

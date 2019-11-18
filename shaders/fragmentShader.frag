@@ -25,6 +25,7 @@ void main() {
 
     float diffuse = max(dot(normal, lightDir), 0.0)/(d*d)*intensity;
 
-    gl_FragColor = vec4(min(ambientLight+diffuse,1.8)*c.rgb, 1.0);
+    // gl_FragColor = vec4(min(ambientLight+diffuse,1.8)*c.rgb, 1.0);
     // gl_FragColor = vec4(0.5*(normal.xyz+1.0), 1.0); // show normal
+    gl_FragColor = c;// wireframe
 }
