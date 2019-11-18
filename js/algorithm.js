@@ -37,6 +37,37 @@ const algorithm = (()=>{
 
     }
 
+    function isInsidePolygon(p, edgeVerts){
+        function isLeft(p1,p2,p){
+            return (p2[0]-p1[0])*(p[1]-p1[1])-(p2[1]-p1[1])*(p[0]-p1[0])
+        }
+
+        var windingNumber = 0;
+        for(let i=0;i<edgeVerts.length;i++){
+            // edge edgeVerts[i] to edgeVerts[i+1]
+            var p1 = edgeVerts[i], p2;
+            if(i===edgeVerts.length-1){
+                p2 = edgeVerts[0]
+            }else{
+                p2 = edgeVerts[i+1];
+            }
+            if(p1[1]<=p[1]){
+                if(p2[1]>p[1]){ // An upward crossing
+                    if(isLeft(p1,p2,p)>0){
+                        windingNumber++;
+                    }
+                }
+            }else{
+                if(p2[1]<=p[1]){
+                    if(isLeft(p1,p2,p)<0){
+                        windingNumber--;
+                    }
+                }
+            }
+        }
+        return windingNumber!==0;
+    }
+
     function Delaunay(verts){
 
         function triangleCircumcenter(vertIds){
@@ -53,6 +84,16 @@ const algorithm = (()=>{
                 ((x2-x1) * (x3*x3 - x1*x1 + y3*y3 - y1*y1) - (x3-x1)* (x2*x2 - x1*x1 + y2*y2 - y1*y1))/ (2 * (y3-y1) * (x2-x1) - 2 * ((y2-y1) * (x3-x1)))
                 ,z);
             return center;
+        }
+
+        function triangleCentroid(vertIds){
+            const x1=verts[vertIds[0]][0], 
+                x2=verts[vertIds[1]][0], 
+                x3=verts[vertIds[2]][0], 
+                y1=verts[vertIds[0]][1], 
+                y2=verts[vertIds[1]][1],
+                y3=verts[vertIds[2]][1];
+            return vec3.fromValues((x1+x2+x3)/3,(y1+y2+y3)/3,z)
         }
 
         const triangles = [];
@@ -90,6 +131,7 @@ const algorithm = (()=>{
         triangles.push({
             vertIds:superTVertIds,
             center:superTCenter,
+            centroid: triangleCentroid(superTVertIds),
             radius:vec3.distance(superTCenter,verts[verts.length-1]),
         })
         
@@ -172,6 +214,7 @@ const algorithm = (()=>{
                 const newTriangle = {
                     vertIds,
                     center,
+                    centroid: triangleCentroid(vertIds),
                     radius,
                 }
                 
@@ -179,22 +222,23 @@ const algorithm = (()=>{
             }
         }
 
-        //    remove any triangles from the triangle list that use the supertriangle vertices
+        // remove any triangles 1. from the triangle list that use the supertriangle vertices, 2. centroid of which is outside of the polygon (using winding number algorithm)
         for(let i=0;i<triangles.length;i++){
-            if(triangles[i].vertIds.indexOf(verts.length-1)>-1
-            ||triangles[i].vertIds.indexOf(verts.length-2)>-1
-            ||triangles[i].vertIds.indexOf(verts.length-3)>-1){
+            const triangle = triangles[i]
+            if(triangle.vertIds.indexOf(verts.length-1)>-1
+            ||triangle.vertIds.indexOf(verts.length-2)>-1
+            ||triangle.vertIds.indexOf(verts.length-3)>-1
+            ||isInsidePolygon(triangle.centroid,verts.slice(0,verts.length-3))===false){
                 triangles.splice(i,1);
                 i--;
             }
         }
         
-        //    remove the supertriangle vertices from the vertex list
+        // remove the supertriangle vertices from the vertex list
         verts.splice(verts.length-3,3);
-        // console.log(verts.length)
+
         const outputVertices = verts.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
         const outputIndices = triangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
-        // console.log(outputVertices.length/6,Math.max(...outputIndices))
         
         return {
             vertices: outputVertices,
