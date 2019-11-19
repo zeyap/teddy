@@ -9,8 +9,10 @@ const scene = (()=>{
         vertices:[],indices:[],
     };
 
-    var eye;
+    var eye = vec3.fromValues(0,0,1.0);
+    const up = vec3.fromValues(0.0,1.0,0.0);
     var ratio;
+    const  focal = vec3.fromValues(0,0,0);// look at -z
     clientRect = webglCanvas.getBoundingClientRect();
     setRatio(clientRect.width/clientRect.height);
 
@@ -21,9 +23,6 @@ const scene = (()=>{
     function initCamera(){
         const near = 0.1, far = 1000.0;
         const fov = 80; 
-        eye = vec3.fromValues(0,0,1.0);
-        var up = vec3.fromValues(0.0,1.0,0.0);
-        var focal = vec3.fromValues(0,0,0);// look at -z
 
         view.projMat = mat4.create();
         mat4.perspective(view.projMat, Math.PI/180*fov, ratio, near, far);
@@ -31,6 +30,19 @@ const scene = (()=>{
         mat4.identity(view.modelMat);
         view.viewMat = mat4.create();
         mat4.lookAt(view.viewMat, eye, focal, up);
+        
+    }
+    function resetCamera(){
+        eye = vec3.fromValues(0,0,1.0);
+    }
+
+    function rotateCamera(rad){
+        if(object.vertices.length===0 || object.indices.length===0){
+            return;
+        }
+        vec3.rotateY(eye, eye, focal, rad/Math.PI*180)
+        mat4.lookAt(view.viewMat, eye, focal, up);
+        
     }
 
     function initLights(){
@@ -43,7 +55,8 @@ const scene = (()=>{
 
     function buildObject(equalizedPath){
         const triangles = algorithm.Delaunay([...equalizedPath]);
-        const prunedTriangles = algorithm.pruneTriangles(triangles, equalizedPath)
+       
+        const prunedTriangles = algorithm.pruneTrianglesAndElevateVertices(triangles, equalizedPath)
 
         const outputVertices = equalizedPath.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
 
@@ -77,6 +90,8 @@ const scene = (()=>{
         initLights,
         buildObject,
         setRatio,
+        rotateCamera,
+        resetCamera,
 
         getNDCxy,
         NDCToWorld,

@@ -5,6 +5,7 @@ const canvas = (()=>{
     var path = [];
     
     function onMouseDown(e){
+        scene.resetCamera();
         mouseDown = true;
         path = [];
     }
@@ -33,21 +34,28 @@ const canvas = (()=>{
             path.push(intersectp)
         }
 
-        const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.1)
-        scene.buildObject(equalizedPath);
+        // const equalizedPath = [];
+        // algorithm.Equalize(equalizedPath,path,0.1)
+        // scene.buildObject(equalizedPath);
 
     }
 
     function onMouseUp(e){
         mouseDown = false;
-        // const equalizedPath = [];
-        // algorithm.Equalize(equalizedPath,path,0.1)
-        // scene.buildObject(equalizedPath);
+        const equalizedPath = [];
+        algorithm.Equalize(equalizedPath,path,0.1)
+        scene.buildObject(equalizedPath);
     }
 
     function setMode(){
         
+    }
+
+    function onScroll(event){
+        const rotateRad = event.deltaX
+        scene.rotateCamera(rotateRad/1000)
+        
+        event.preventDefault();
     }
 
     function onResize(){
@@ -61,6 +69,7 @@ const canvas = (()=>{
         webglCanvas.addEventListener('mousemove', onMouseMove)
         webglCanvas.addEventListener('mouseup', onMouseUp)
         webglCanvas.addEventListener('mouseleave', onMouseUp)
+        webglCanvas.onwheel = onScroll
         window.onresize = onResize
     }
 
