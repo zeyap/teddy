@@ -34,17 +34,17 @@ const canvas = (()=>{
             path.push(intersectp)
         }
 
-        // const equalizedPath = [];
-        // algorithm.Equalize(equalizedPath,path,0.1)
-        // scene.buildObject(equalizedPath);
+        const equalizedPath = [];
+        algorithm.Equalize(equalizedPath,path,0.05)
+        scene.buildObject(equalizedPath);
 
     }
 
     function onMouseUp(e){
         mouseDown = false;
-        const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.1)
-        scene.buildObject(equalizedPath);
+        // const equalizedPath = [];
+        // algorithm.Equalize(equalizedPath,path,0.05)
+        // scene.buildObject(equalizedPath);
     }
 
     function setMode(){
@@ -52,8 +52,9 @@ const canvas = (()=>{
     }
 
     function onScroll(event){
-        const rotateRad = event.deltaX
-        scene.rotateCamera(rotateRad/1000)
+        const rotateRadY = event.deltaX
+        const rotateRadX = event.deltaY
+        scene.rotateCamera(rotateRadX/1000,rotateRadY/1000)
         
         event.preventDefault();
     }

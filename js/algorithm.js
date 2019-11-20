@@ -338,9 +338,7 @@ const algorithm = (()=>{
 
                     const inEdgeV1Id = interiorEdge[0],
                     inEdgeV2Id = interiorEdge[1];
-                    semicircleCenter = vec3.create();
-                    vec3.add(semicircleCenter,verts[inEdgeV1Id],verts[inEdgeV2Id]);
-                    vec3.scale(semicircleCenter,semicircleCenter,0.5);
+                    semicircleCenter = getEdgeCenter(verts[inEdgeV1Id],verts[inEdgeV2Id])
 
                     anotherVertId = triangle.vertIds[0]^triangle.vertIds[1]^triangle.vertIds[2]
                     ^inEdgeV1Id^inEdgeV2Id;
@@ -415,18 +413,13 @@ const algorithm = (()=>{
                 for(let j=0;j<edgeBuffer.length;j++){
                     prunedTriangles.push({
                         vertIds:[edgeBuffer[j][0],edgeBuffer[j][1],verts.length-1],
-                        
                     })
                     addInteriorExteriorPair(verts.length-1, edgeBuffer[j][0],interiorVerts)
                     addInteriorExteriorPair(verts.length-1, edgeBuffer[j][1],interiorVerts)
                     
-
                 }
-                
-                
             }
         }
-
         
         for(let i=0;i<spineEndpointsId.length;i++){
             
@@ -450,9 +443,7 @@ const algorithm = (()=>{
                 for(let k=0;k<triangle.interiorEdges.length;k++){
                     const e = triangle.interiorEdges[k];
                     // retriangulate
-                    const eCenter = vec3.create();
-                    vec3.add(eCenter,verts[e[0]],verts[e[1]])
-                    vec3.scale(eCenter,eCenter,0.5);
+                    const eCenter = getEdgeCenter(verts[e[0]],verts[e[1]])
 
                     verts.push(eCenter);
 
@@ -510,6 +501,13 @@ const algorithm = (()=>{
         return prunedTriangles;
     }
 
+    function getEdgeCenter(v1,v2){
+        const center = vec3.create();
+        vec3.add(center,v1,v2);
+        vec3.scale(center,center,0.5);
+        return center;
+    }
+
     function addInteriorExteriorPair(inId, outId,interiorVerts){
         interiorVerts[inId] = interiorVerts[inId]||{}
         interiorVerts[inId][outId] = 1
@@ -528,14 +526,52 @@ const algorithm = (()=>{
             avgDist/=n;
             verts[inVId][2] = -0.5*avgDist;
         }
+        
+    }
+
+    function createNormals(viewDir, triangles, verts){
+        const normals = [];
+        for(let i=0;i<verts.length;i++){
+            if(normals[i]!=null)continue;
+            normals[i] = vec3.fromValues(0,0,0);
+        }
+
+        for(let i=0;i<triangles.length;i++){
+            const normal = vec3.fromValues(0,0,0);
+            const vertIds = triangles[i].vertIds;
+            for(let j=0;j<vertIds.length;j++){
+                vec3.add(normal, normal, verts[vertIds[j]])
+            }
+            vec3.normalize(normal, normal)
+            // vec3.scale(normal, normal, -1)
+            
+            for(let j=0;j<vertIds.length;j++){
+                vec3.add(normals[vertIds[j]],normals[vertIds[j]],normal);
+            }
+        }
+
+        for(let i=0;i<verts.length;i++){
+            vec3.normalize(normals[i],normals[i]);
+        }
+        
+        return normals;
+    }
+
+    function drawBackface(triangles, verts, normals){
         //copy each vertex and triangle
+        
         const vertsNum = verts.length;
         const triangleNum = triangles.length;
         for(let i=0;i<vertsNum;i++){
             verts[vertsNum+i] = vec3.create();
             vec3.copy(verts[vertsNum+i],verts[i])
             verts[vertsNum+i][2] = -verts[vertsNum+i][2]
+            normals[vertsNum+i] = vec3.create()
+            
+            vec3.copy(normals[vertsNum+i],normals[i])
+            normals[vertsNum+i][2] = -normals[vertsNum+i][2]
         }
+
         for(let i=0;i<triangleNum;i++){
             const triiVerts = triangles[i].vertIds;
             triangles[triangleNum+i] = {
@@ -548,5 +584,7 @@ const algorithm = (()=>{
         Equalize,
         Delaunay,
         pruneTrianglesAndElevateVertices,
+        createNormals,
+        drawBackface,
     }
 })()

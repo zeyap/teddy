@@ -31,7 +31,7 @@
     runWebGL();
 
     function runWebGL(){
-        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader_wireframe.frag'},{id:'vert',src:'./shaders/vertexShader_wireframe.vert'}],(filesLoaded)=>{
+        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader.frag'},{id:'vert',src:'./shaders/vertexShader.vert'}],(filesLoaded)=>{
             const data = {}
             data.fragmentShaderText = filesLoaded[0];
             data.vertexShaderText = filesLoaded[1];
@@ -43,28 +43,29 @@
     function getUpdateFunction(data){
         webGLUtils.initializeWegGL('webglCanvas');
         webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, 
-        // {
-        //     uniforms:[
-        //         {name:'xform_projMat', type:'Matrix4fv'},
-        //         {name:'xform_viewMat', type:'Matrix4fv'},
-        //         {name:'xform_modelMat', type:'Matrix4fv'},
-        //         {name:'lightPos', type:'3fv'},
-        //     ], 
-        //     attributes:[
-        //         {name:'vert_position'},
-        //         {name:'vert_normal'}
-        //     ]
-        // }
         {
             uniforms:[
                 {name:'xform_projMat', type:'Matrix4fv'},
                 {name:'xform_viewMat', type:'Matrix4fv'},
                 {name:'xform_modelMat', type:'Matrix4fv'},
+                {name:'lightPos', type:'3fv'},
             ], 
             attributes:[
                 {name:'vert_position'},
+                {name:'vert_normal'},
+                {name:'vert_barycentric'}
             ]
         }
+        // {
+        //     uniforms:[
+        //         {name:'xform_projMat', type:'Matrix4fv'},
+        //         {name:'xform_viewMat', type:'Matrix4fv'},
+        //         {name:'xform_modelMat', type:'Matrix4fv'},
+        //     ], 
+        //     attributes:[
+        //         {name:'vert_position'},
+        //     ]
+        // }
         )
         canvas.initializeMouseEvents();
 
@@ -73,13 +74,15 @@
             scene.initCamera();
             scene.initLights();
             
-            webGLUtils.clearScreen([0.2,0.7,1.0,1.0]);
+            webGLUtils.clearScreen([0.3,0.4,1.0,1.0]);
 
             webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},'program0', {
                 'xform_projMat':scene.view.projMat,
                 'xform_viewMat':scene.view.viewMat,
                 'xform_modelMat':scene.view.modelMat,
-            }, {positionAttributeId:'vert_position'})
+                'lightPos':scene.view.lightPos,
+            }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
+            barycentricAttributeId:'vert_barycentric'})
             
             
             window.requestAnimationFrame(updateWebGL);

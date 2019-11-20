@@ -202,7 +202,7 @@ const webGLUtils = (function(){
             if(vertices==null ||indices==null){
                 return;
             }
-            // const shape = createShape(vertices, indices, textureUnits);
+            const shape = createShape(vertices, indices, textureUnits);
             const program =programs[programId];
             
             gl.useProgram(program)
@@ -216,8 +216,8 @@ const webGLUtils = (function(){
                 setUniform(program, uniformName, value)
             }
 
-            // drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
-            drawWireframe(vertices, indices, program, positionAttributeId);
+            drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
+            // drawWireframe(vertices, indices, program, positionAttributeId);
             
             gl.useProgram(null)
         },

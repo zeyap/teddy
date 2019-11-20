@@ -36,11 +36,28 @@ const scene = (()=>{
         eye = vec3.fromValues(0,0,1.0);
     }
 
-    function rotateCamera(rad){
+    function rotateCamera(radX, radY){
         if(object.vertices.length===0 || object.indices.length===0){
             return;
         }
-        vec3.rotateY(eye, eye, focal, rad/Math.PI*180)
+        
+        const viewDir = vec3.create()
+        vec3.subtract(viewDir,focal,eye)
+
+        const rotateCamX = mat4.create();
+        const axisRotX = vec3.create();
+        vec3.cross(axisRotX,viewDir,up);
+        vec3.cross(up,axisRotX,viewDir)
+        mat4.fromRotation(rotateCamX,radX,axisRotX);
+
+        const rotateCamY = mat4.create();
+        const axisRotY = vec3.create()
+        vec3.copy(axisRotY, up);
+        mat4.fromRotation(rotateCamY,radY,axisRotY);
+
+        vec3.transformMat4(eye,eye,rotateCamX)
+        vec3.transformMat4(eye,eye,rotateCamY)
+
         mat4.lookAt(view.viewMat, eye, focal, up);
         
     }
@@ -55,10 +72,19 @@ const scene = (()=>{
 
     function buildObject(equalizedPath){
         const triangles = algorithm.Delaunay([...equalizedPath]);
-       
+        
         const prunedTriangles = algorithm.pruneTrianglesAndElevateVertices(triangles, equalizedPath)
+        
+        const normals = algorithm.createNormals(null, prunedTriangles, equalizedPath);
+        
+        algorithm.drawBackface(prunedTriangles, equalizedPath, normals);
 
-        const outputVertices = equalizedPath.reduce((accum, vec3vert)=> accum.concat([vec3vert[0],vec3vert[1],vec3vert[2]]),[]);
+        var outputVertices = [];
+        for(let i=0;i<equalizedPath.length;i++){
+            
+            outputVertices = outputVertices.concat([equalizedPath[i][0],equalizedPath[i][1],equalizedPath[i][2],
+            normals[i][0],normals[i][1],normals[i][2]])
+        }
 
         const outputIndices = prunedTriangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
 
