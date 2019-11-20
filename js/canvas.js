@@ -5,6 +5,7 @@ const canvas = (()=>{
     var path = [];
     
     function onMouseDown(e){
+        scene.clearObject();
         scene.resetCamera();
         mouseDown = true;
         path = [];
@@ -34,17 +35,17 @@ const canvas = (()=>{
             path.push(intersectp)
         }
 
-        const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.04)
-        scene.buildObject(equalizedPath);
+        // const equalizedPath = [];
+        // algorithm.Equalize(equalizedPath,path,0.04)
+        // scene.buildObject(equalizedPath);
 
     }
 
     function onMouseUp(e){
         mouseDown = false;
-        // const equalizedPath = [];
-        // algorithm.Equalize(equalizedPath,path,0.05)
-        // scene.buildObject(equalizedPath);
+        const equalizedPath = [];
+        algorithm.Equalize(equalizedPath,path,0.05)
+        scene.buildObject(equalizedPath);
     }
 
     function setMode(){

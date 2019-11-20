@@ -71,6 +71,11 @@ const scene = (()=>{
         }
     }
 
+    function clearObject(){
+        object.vertices = [];
+        object.indices = [];
+    }
+
     function buildObject(equalizedPath){
         const triangles = algorithm.Delaunay([...equalizedPath]);
         
@@ -119,6 +124,7 @@ const scene = (()=>{
         setRatio,
         rotateCamera,
         resetCamera,
+        clearObject,
 
         getNDCxy,
         NDCToWorld,

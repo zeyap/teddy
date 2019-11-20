@@ -12,7 +12,7 @@ varying mat4 modelMat;
 
 void main() {
     
-    vec4 c = vec4(1.0,1.0,1.0,1.0);
+    vec4 c = vec4(0.3,0.8,1.0,1.0);
 
     vec3 v = normalize(-vertexPos.xyz);
     
