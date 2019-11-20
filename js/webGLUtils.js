@@ -74,7 +74,7 @@ const webGLUtils = (function(){
 
             gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
             gl.enableVertexAttribArray(program[positionAttrId]);
-            gl.vertexAttribPointer(program[positionAttrId], 3, gl.FLOAT, false, 4*3, 0);
+            gl.vertexAttribPointer(program[positionAttrId], 3, gl.FLOAT, false, 4*6, 0);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
             gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, 0);

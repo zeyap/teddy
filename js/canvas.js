@@ -35,7 +35,7 @@ const canvas = (()=>{
         }
 
         const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.05)
+        algorithm.Equalize(equalizedPath,path,0.04)
         scene.buildObject(equalizedPath);
 
     }

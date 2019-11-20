@@ -413,6 +413,7 @@ const algorithm = (()=>{
                 for(let j=0;j<edgeBuffer.length;j++){
                     prunedTriangles.push({
                         vertIds:[edgeBuffer[j][0],edgeBuffer[j][1],verts.length-1],
+                        spineEdges:[[verts.length-1, edgeBuffer[j][0]],[verts.length-1, edgeBuffer[j][1]]]
                     })
                     addInteriorExteriorPair(verts.length-1, edgeBuffer[j][0],interiorVerts)
                     addInteriorExteriorPair(verts.length-1, edgeBuffer[j][1],interiorVerts)
@@ -451,13 +452,15 @@ const algorithm = (()=>{
 
                     prunedTriangles.push({
                         vertIds:[startVertId,verts.length-1,e[0]],
+                        spineEdges:[[startVertId, e[0]],[verts.length-1, e[0]]]
                     })
                     
                     addInteriorExteriorPair(startVertId, e[0],interiorVerts)
                     addInteriorExteriorPair(verts.length-1, e[0],interiorVerts)
 
                     prunedTriangles.push({
-                        vertIds:[startVertId,verts.length-1,e[1]]
+                        vertIds:[startVertId,verts.length-1,e[1]],
+                        spineEdges:[[startVertId, e[1]],[verts.length-1, e[1]]]
                     })
                     addInteriorExteriorPair(startVertId, e[1],interiorVerts)
                     addInteriorExteriorPair(verts.length-1, e[1],interiorVerts)
@@ -485,7 +488,8 @@ const algorithm = (()=>{
                 if(triangle.type === 'S'){
                     const eEdge = triangle.externalEdges[0];
                     prunedTriangles.push({
-                        vertIds:[startVertId,eEdge[0],eEdge[1]]
+                        vertIds:[startVertId,eEdge[0],eEdge[1]],
+                        spineEdges:[[startVertId, eEdge[0]],[startVertId, eEdge[1]]]
                     })
                     
                     addInteriorExteriorPair(startVertId, eEdge[0],interiorVerts)
@@ -497,8 +501,8 @@ const algorithm = (()=>{
             
         }
 
-        elevateVertices(prunedTriangles,interiorVerts, verts)
-        return prunedTriangles;
+        const divTriangles = elevateVertices(prunedTriangles,interiorVerts, verts)
+        return divTriangles;
     }
 
     function getEdgeCenter(v1,v2){
@@ -526,6 +530,46 @@ const algorithm = (()=>{
             avgDist/=n;
             verts[inVId][2] = -0.5*avgDist;
         }
+
+        // turn each spine edge into quarter oval
+        const divTriangles = []
+        const triangleNum = triangles.length
+        for(let i=0;i<triangleNum;i++){
+            const triangle = triangles[i];
+            //sew two spines
+            const p = [];
+            for(let j=0;j<2;j++){
+                const e = triangle.spineEdges[j];
+                p[j] = [];
+                p[j][0] = e[0];
+                const b = verts[p[j][0]][2]
+                p[j][4] = e[1];
+                const p2 = getEdgeCenter(verts[p[j][0]],verts[p[j][4]]);
+                p2[2] = b*Math.sqrt(3)/2;
+                verts.push(p2)
+                p[j][2] = verts.length-1
+                const p1 = getEdgeCenter(verts[p[j][0]],verts[p[j][2]]);
+                p1[2] = b*Math.sqrt(15)/4;
+                verts.push(p1)
+                p[j][1] = verts.length-1
+                const p3 = getEdgeCenter(verts[p[j][2]],verts[p[j][4]])
+                p3[2] = b*Math.sqrt(7)/4;
+                verts.push(p3)
+                p[j][3] = verts.length-1
+            }
+            
+            for(let j=0;j<4;j++){
+                divTriangles.push({
+                    vertIds:[p[0][j],p[1][j],p[1][j+1]]
+                })
+                divTriangles.push({
+                    vertIds:[p[0][j],p[1][j+1],p[0][j+1]]
+                })
+            }
+            
+            
+        }
+        return divTriangles;
         
     }
 

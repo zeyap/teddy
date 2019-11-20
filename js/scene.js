@@ -32,6 +32,7 @@ const scene = (()=>{
         mat4.lookAt(view.viewMat, eye, focal, up);
         
     }
+
     function resetCamera(){
         eye = vec3.fromValues(0,0,1.0);
     }
