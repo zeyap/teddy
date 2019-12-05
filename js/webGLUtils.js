@@ -222,6 +222,37 @@ const webGLUtils = (function(){
             gl.useProgram(null)
         },
 
+        drawLine:function(vertices,programId,uniforms,
+        {
+            positionAttributeId,
+        }){
+            if(vertices==null||vertices.length<3){
+                return;
+            }
+            
+            const indices = new Array(Math.floor(vertices.length/3)-1);
+            for(let i=0;i<indices.length;i++){
+                indices[i] = i+1;
+            }
+
+            const shape = createShape(vertices, indices, null);
+            const stride = 4*3;
+            const program = programs[programId];
+
+            gl.useProgram(program);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
+            gl.enableVertexAttribArray(program[positionAttributeId]);
+            gl.vertexAttribPointer(program[positionAttributeId], 3, gl.FLOAT, false, stride, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
+            gl.drawElements(gl.LINE_STRIP, shape.size, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            
+            gl.useProgram(null)
+        },
+
         clearScreen:function(color){
             if(color == undefined) {
                 color = [1.0, 1.0, 1.0, 1.0];

@@ -38,17 +38,34 @@
     runWebGL();
 
     function runWebGL(){
-        assetUtils.loadFiles([{id:'frag',src:'./shaders/fragmentShader.frag'},{id:'vert',src:'./shaders/vertexShader.vert'}],(filesLoaded)=>{
-            const data = {}
-            data.fragmentShaderText = filesLoaded[0];
-            data.vertexShaderText = filesLoaded[1];
-            const updateWebGL = getUpdateFunction(data);
-        window.requestAnimationFrame(updateWebGL);
-        })
+        assetUtils.loadFiles([
+            {id:'frag',src:'./shaders/fragmentShader.frag'},
+            {id:'vert',src:'./shaders/vertexShader.vert'},
+            {id:'frag_line',src:'./shaders/fragmentShader_line.frag'},
+            {id:'vert_line',src:'./shaders/vertexShader_line.vert'}],
+            (filesLoaded)=>{
+                const data = {}
+                data.fragmentShaderText = filesLoaded[0];
+                data.vertexShaderText = filesLoaded[1];
+                data.fragmentShaderLineText = filesLoaded[2];
+                data.vertexShaderLineText = filesLoaded[3];
+                const updateWebGL = getUpdateFunction(data);
+            window.requestAnimationFrame(updateWebGL);
+            })
     }
 
     function getUpdateFunction(data){
+        
         webGLUtils.initializeWegGL('webglCanvas');
+
+        webGLUtils.createGlslProgram('program_line', data.vertexShaderLineText, data.fragmentShaderLineText, 
+        {
+            uniforms:[],
+            attributes:[
+                {name:'vert_position'},
+            ]
+        })
+        
         webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, 
         {
             uniforms:[
@@ -75,6 +92,7 @@
         //     ]
         // }
         )
+
         canvas.initializeMouseEvents();
 
         const updateWebGL = ()=>{
@@ -84,15 +102,25 @@
             
             webGLUtils.clearScreen([0.8,0.8,0.8,1.0]);
 
-            webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},'program0', {
-                'xform_projMat':scene.view.projMat,
-                'xform_viewMat':scene.view.viewMat,
-                'xform_modelMat':scene.view.modelMat,
-                'lightPos':scene.view.lightPos,
-                'color':canvas.getColor(),
-            }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
-            barycentricAttributeId:'vert_barycentric'})
-            
+            if(canvas.getMode()=='create'){
+                //show path
+                webGLUtils.drawLine(canvas.getStroke(),'program_line',{},{
+                    positionAttributeId:'vert_position',
+                })
+            }
+
+            if(canvas.getMode()!=='create'){
+                
+                // show object
+                webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},'program0', {
+                    'xform_projMat':scene.view.projMat,
+                    'xform_viewMat':scene.view.viewMat,
+                    'xform_modelMat':scene.view.modelMat,
+                    'lightPos':scene.view.lightPos,
+                    'color':canvas.getColor(),
+                }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
+                barycentricAttributeId:'vert_barycentric'})
+            }
             
             window.requestAnimationFrame(updateWebGL);
         }

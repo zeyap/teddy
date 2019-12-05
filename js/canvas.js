@@ -3,18 +3,26 @@ const canvas = (()=>{
     var mouseDown = false;
     var mode = 'create'//paint, extrude, cut
     var color = vec4.fromValues(0.3,0.8,1.0,1.0);
-    var path = [];
+    var stroke = [];
     
     function onClear(){
         scene.clearObject();
         scene.resetCamera();
         mouseDown = false;
-        path = [];
+        stroke = [];
         setMode('create');
+    }
+
+    function getStroke(){
+        return stroke;
     }
 
     function getColor(){
         return color;
+    }
+
+    function getMode(){
+        return mode;
     }
 
     function onColorChange(evt){
@@ -33,38 +41,45 @@ const canvas = (()=>{
         if(!mouseDown){
             return;
         }
-        
+
         const [x,y] = scene.getNDCxy(e.clientX,e.clientY,clientRect);
-        const l0 = scene.NDCToWorld(vec4.fromValues(x,y,1,1))
-        const l1 = scene.NDCToWorld(vec4.fromValues(x,y,-1,1))
-        const rayDir = vec3.create();
-        vec3.subtract(rayDir,l1,l0);
-        vec3.normalize(rayDir,rayDir)
 
         if(mode === 'create'){
-            const planeNormal = vec3.fromValues(0,0,1);
-            const planePoint = vec3.fromValues(0,0,0);//near
-            const p0Minusl0 = vec3.create();
-            vec3.subtract(p0Minusl0,planePoint,l0)
-            const t = vec3.dot(p0Minusl0,planeNormal)/vec3.dot(rayDir,planeNormal)
-            const intersectp = vec3.create()
-            vec3.scaleAndAdd(intersectp,l0,rayDir,t)
-            
-            path.push(intersectp)
+            stroke = stroke.concat([x,y,0])
         }
-
-        // const equalizedPath = [];
-        // algorithm.Equalize(equalizedPath,path,0.04)
-        // scene.buildObject(equalizedPath);
 
     }
 
     function onMouseUp(e){
         mouseDown = false;
-        const equalizedPath = [];
-        algorithm.Equalize(equalizedPath,path,0.05)
-        scene.buildObject(equalizedPath);
-        setMode('paint');
+
+        if(mode==='create'){
+            var path = [];
+            for(let i=0;i<stroke.length;i+=3){
+                const x = stroke[3*i],y = stroke[3*i+1];
+                const l0 = scene.NDCToWorld(vec4.fromValues(x,y,1,1))
+                const l1 = scene.NDCToWorld(vec4.fromValues(x,y,-1,1))
+                const rayDir = vec3.create();
+                vec3.subtract(rayDir,l1,l0);
+                vec3.normalize(rayDir,rayDir)
+
+                const planeNormal = vec3.fromValues(0,0,1);
+                const planePoint = vec3.fromValues(0,0,0);//near
+                const p0Minusl0 = vec3.create();
+                vec3.subtract(p0Minusl0,planePoint,l0)
+                const t = vec3.dot(p0Minusl0,planeNormal)/vec3.dot(rayDir,planeNormal)
+                const intersectp = vec3.create()
+                vec3.scaleAndAdd(intersectp,l0,rayDir,t)
+                
+                path.push(intersectp)
+            }
+            
+            const equalizedPath = [];
+            algorithm.Equalize(equalizedPath,path,0.05)
+            
+            scene.buildObject(equalizedPath);
+            setMode('paint');
+        }
     }
 
     function setMode(newMode){
@@ -102,7 +117,8 @@ const canvas = (()=>{
 
     return {
         initializeMouseEvents,
-        path,
+        getStroke,
         getColor,
+        getMode,
     };
 })()

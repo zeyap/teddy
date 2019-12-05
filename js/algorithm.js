@@ -12,6 +12,7 @@ const algorithm = (()=>{
         var lastAddedPoint = mousePath[0];
         
         for(let i=1;i<=mousePath.length;i++){
+            
             const newVec = vec3.create();
             vec3.subtract(newVec, mousePath[i%mousePath.length], mousePath[i-1]);
             const newVecNorm = vec3.create();
