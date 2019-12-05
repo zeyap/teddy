@@ -1,6 +1,7 @@
 precision highp float;
 
 uniform vec3 lightPos;
+uniform vec4 color;
 
 float intensity = 1.0;
 float ambientLight = 0.5;
@@ -12,7 +13,7 @@ varying mat4 modelMat;
 
 void main() {
     
-    vec4 c = vec4(0.3,0.8,1.0,1.0);
+    vec4 c = color;//vec4(0.3,0.8,1.0,1.0);
 
     vec3 v = normalize(-vertexPos.xyz);
     

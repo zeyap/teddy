@@ -514,7 +514,7 @@ const algorithm = (()=>{
 
     function addInteriorExteriorPair(inId, outId,interiorVerts){
         interiorVerts[inId] = interiorVerts[inId]||{}
-        interiorVerts[inId][outId] = 1
+        interiorVerts[inId][outId] = []
 
     }
 
@@ -539,23 +539,36 @@ const algorithm = (()=>{
             //sew two spines
             const p = [];
             for(let j=0;j<2;j++){
+                
                 const e = triangle.spineEdges[j];
                 p[j] = [];
                 p[j][0] = e[0];
-                const b = verts[p[j][0]][2]
                 p[j][4] = e[1];
-                const p2 = getEdgeCenter(verts[p[j][0]],verts[p[j][4]]);
-                p2[2] = b*Math.sqrt(3)/2;
-                verts.push(p2)
-                p[j][2] = verts.length-1
-                const p1 = getEdgeCenter(verts[p[j][0]],verts[p[j][2]]);
-                p1[2] = b*Math.sqrt(15)/4;
-                verts.push(p1)
-                p[j][1] = verts.length-1
-                const p3 = getEdgeCenter(verts[p[j][2]],verts[p[j][4]])
-                p3[2] = b*Math.sqrt(7)/4;
-                verts.push(p3)
-                p[j][3] = verts.length-1
+                if(interiorVerts[e[0]][e[1]].length>0){
+                    p[j][1] = interiorVerts[e[0]][e[1]][0]
+                    p[j][2] = interiorVerts[e[0]][e[1]][1]
+                    p[j][3] = interiorVerts[e[0]][e[1]][2]
+                }else{
+                    
+                    const b = verts[p[j][0]][2]
+                    const p2 = getEdgeCenter(verts[p[j][0]],verts[p[j][4]]);
+                    p2[2] = b*Math.sqrt(3)/2;
+                    verts.push(p2)
+                    p[j][2] = verts.length-1
+                    const p1 = getEdgeCenter(verts[p[j][0]],verts[p[j][2]]);
+                    p1[2] = b*Math.sqrt(15)/4;
+                    verts.push(p1)
+                    p[j][1] = verts.length-1
+                    const p3 = getEdgeCenter(verts[p[j][2]],verts[p[j][4]])
+                    p3[2] = b*Math.sqrt(7)/4;
+                    verts.push(p3)
+                    p[j][3] = verts.length-1
+
+                    interiorVerts[e[0]][e[1]][0] = p[j][1]
+                    interiorVerts[e[0]][e[1]][1] = p[j][2]
+                    interiorVerts[e[0]][e[1]][2] = p[j][3]
+                }
+                
             }
             
             for(let j=0;j<4;j++){
@@ -569,6 +582,7 @@ const algorithm = (()=>{
             
             
         }
+        // console.log(verts.length)
         return divTriangles;
         
     }

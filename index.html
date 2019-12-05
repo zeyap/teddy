@@ -13,9 +13,16 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 </head>
-<body>
+<body style="margin:0;padding:0">
 <div align="center">
-    <canvas id="webglCanvas" style="width:calc(100vw - 20px); height:calc(100vh - 20px); margin: 10px" width=1000 height=1000></canvas>
+    <canvas id="webglCanvas" style="width:100vw; height:100vh;" width=1000 height=1000></canvas>
+    <div style="position: absolute; bottom:20px; right:40px;">
+        <input type="color" id="colorPicker"
+            value="#4DCCFF">
+        <!-- <label for="head">Color</label> -->
+        <button id="undoButton" style="font-size: 1.0em; margin-left:5px;">Undo</button>
+        <button id="clearButton" style="font-size: 1.0em; margin-left:5px;">Clear</button>
+    </div>
 </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
@@ -49,6 +56,7 @@
                 {name:'xform_viewMat', type:'Matrix4fv'},
                 {name:'xform_modelMat', type:'Matrix4fv'},
                 {name:'lightPos', type:'3fv'},
+                {name:'color', type:'4fv'},
             ], 
             attributes:[
                 {name:'vert_position'},
@@ -81,6 +89,7 @@
                 'xform_viewMat':scene.view.viewMat,
                 'xform_modelMat':scene.view.modelMat,
                 'lightPos':scene.view.lightPos,
+                'color':canvas.getColor(),
             }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
             barycentricAttributeId:'vert_barycentric'})
             

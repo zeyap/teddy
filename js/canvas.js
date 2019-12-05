@@ -1,14 +1,32 @@
 const canvas = (()=>{
     var clientRect = webglCanvas.getBoundingClientRect();
     var mouseDown = false;
-    var mode = 'create'//extrude, cut
+    var mode = 'create'//paint, extrude, cut
+    var color = vec4.fromValues(0.3,0.8,1.0,1.0);
     var path = [];
     
-    function onMouseDown(e){
+    function onClear(){
         scene.clearObject();
         scene.resetCamera();
-        mouseDown = true;
+        mouseDown = false;
         path = [];
+        setMode('create');
+    }
+
+    function getColor(){
+        return color;
+    }
+
+    function onColorChange(evt){
+        const hex = evt.target.value;
+        const r = parseInt(hex[1]+hex[2],16)/255,
+        g = parseInt(hex[3]+hex[4],16)/255,
+        b = parseInt(hex[5]+hex[6],16)/255;
+        color = vec4.fromValues(r,g,b,1.0);
+    }
+    
+    function onMouseDown(){
+        mouseDown = true;
     }
 
     function onMouseMove(e){
@@ -46,10 +64,11 @@ const canvas = (()=>{
         const equalizedPath = [];
         algorithm.Equalize(equalizedPath,path,0.05)
         scene.buildObject(equalizedPath);
+        setMode('paint');
     }
 
-    function setMode(){
-        
+    function setMode(newMode){
+        mode = newMode
     }
 
     function onScroll(event){
@@ -70,13 +89,20 @@ const canvas = (()=>{
         webglCanvas.addEventListener('mousedown', onMouseDown)
         webglCanvas.addEventListener('mousemove', onMouseMove)
         webglCanvas.addEventListener('mouseup', onMouseUp)
-        webglCanvas.addEventListener('mouseleave', onMouseUp)
         webglCanvas.onwheel = onScroll
+        
+        var clearButton = document.getElementById("clearButton");
+        clearButton.addEventListener('click',onClear)
+
+        var colorPicker = document.getElementById("colorPicker");
+        colorPicker.addEventListener('change',onColorChange)
+
         window.onresize = onResize
     }
 
     return {
         initializeMouseEvents,
         path,
+        getColor,
     };
 })()
