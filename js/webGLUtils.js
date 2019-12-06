@@ -195,7 +195,7 @@ const webGLUtils = (function(){
             barycentricAttributeId,
             textureAttributeId,
             normalAttributeId,
-        }){
+        }, wireframe){
             /*
             uniforms = {'name':'value',...}
             */
@@ -216,8 +216,11 @@ const webGLUtils = (function(){
                 setUniform(program, uniformName, value)
             }
 
-            drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
-            // drawWireframe(vertices, indices, program, positionAttributeId);
+            if(!wireframe){
+                drawTriangles(program, shape, positionAttributeId, textureAttributeId, normalAttributeId);
+            }else{
+                drawWireframe(vertices, indices, program, positionAttributeId);
+            }
             
             gl.useProgram(null)
         },

@@ -22,6 +22,7 @@
         <!-- <label for="head">Color</label> -->
         <button id="undoButton" style="font-size: 1.0em; margin-left:5px;">Undo</button>
         <button id="clearButton" style="font-size: 1.0em; margin-left:5px;">Clear</button>
+        
     </div>
 </div>
 
@@ -42,13 +43,17 @@
             {id:'frag',src:'./shaders/fragmentShader.frag'},
             {id:'vert',src:'./shaders/vertexShader.vert'},
             {id:'frag_line',src:'./shaders/fragmentShader_line.frag'},
-            {id:'vert_line',src:'./shaders/vertexShader_line.vert'}],
+            {id:'vert_line',src:'./shaders/vertexShader_line.vert'},
+            {id:'frag_wire',src:'./shaders/fragmentShader_wireframe.frag'},
+            {id:'vert_wire',src:'./shaders/vertexShader_wireframe.vert'}],
             (filesLoaded)=>{
                 const data = {}
                 data.fragmentShaderText = filesLoaded[0];
                 data.vertexShaderText = filesLoaded[1];
                 data.fragmentShaderLineText = filesLoaded[2];
                 data.vertexShaderLineText = filesLoaded[3];
+                data.fragmentShaderWireframeText = filesLoaded[4];
+                data.vertexShaderWireframeText = filesLoaded[5];
                 const updateWebGL = getUpdateFunction(data);
             window.requestAnimationFrame(updateWebGL);
             })
@@ -65,7 +70,19 @@
                 {name:'vert_position'},
             ]
         })
-        
+
+        webGLUtils.createGlslProgram('program_wireframe', data.vertexShaderWireframeText,       data.fragmentShaderWireframeText, 
+            {
+                uniforms:[
+                    {name:'xform_projMat', type:'Matrix4fv'},
+                    {name:'xform_viewMat', type:'Matrix4fv'},
+                    {name:'xform_modelMat', type:'Matrix4fv'},
+                ], 
+                attributes:[
+                    {name:'vert_position'},
+                ]
+            })
+
         webGLUtils.createGlslProgram('program0', data.vertexShaderText, data.fragmentShaderText, 
         {
             uniforms:[
@@ -80,18 +97,7 @@
                 {name:'vert_normal'},
                 {name:'vert_barycentric'}
             ]
-        }
-        // {
-        //     uniforms:[
-        //         {name:'xform_projMat', type:'Matrix4fv'},
-        //         {name:'xform_viewMat', type:'Matrix4fv'},
-        //         {name:'xform_modelMat', type:'Matrix4fv'},
-        //     ], 
-        //     attributes:[
-        //         {name:'vert_position'},
-        //     ]
-        // }
-        )
+        })
 
         canvas.initializeMouseEvents();
 
@@ -110,16 +116,18 @@
             }
 
             if(canvas.getMode()!=='create'){
+                const wireframe = false;
                 
                 // show object
-                webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},'program0', {
+                webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},
+                wireframe?'program_wireframe':'program0', {
                     'xform_projMat':scene.view.projMat,
                     'xform_viewMat':scene.view.viewMat,
                     'xform_modelMat':scene.view.modelMat,
                     'lightPos':scene.view.lightPos,
                     'color':canvas.getColor(),
                 }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
-                barycentricAttributeId:'vert_barycentric'})
+                barycentricAttributeId:'vert_barycentric'},wireframe)
             }
             
             window.requestAnimationFrame(updateWebGL);
