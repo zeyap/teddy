@@ -54,6 +54,13 @@ const canvas = (()=>{
         mouseDown = false;
 
         if(mode==='create'){
+            // detect intersection
+            if(algorithm.selfIntersect(stroke)){
+                console.log('self intersects')
+                stroke = [];
+                return;
+            }
+            
             var path = [];
             for(let i=0;i<stroke.length;i+=3){
                 const x = stroke[3*i],y = stroke[3*i+1];
