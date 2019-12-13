@@ -16,17 +16,18 @@
 <body style="margin:0;padding:0">
 <div align="center">
     <canvas id="webglCanvas" style="width:100vw; height:100vh;" width=1000 height=1000></canvas>
-    <div style="position: absolute; bottom:20px; right:40px;">
-        <input type="color" id="colorPicker"
-            value="#4DCCFF">
-        <!-- <label for="head">Color</label> -->
-        <button id="undoButton" style="font-size: 1.0em; margin-left:5px;">Undo</button>
-        <button id="clearButton" style="font-size: 1.0em; margin-left:5px;">Clear</button>
+    <div style="position: absolute; bottom:20px; right:20px;">
         
+        <button class="button" id="undoButton" ><img width="25" height="25" src="images/undo-solid.svg" style="fill: #cccccc;" alt="Undo"></button>
+        <button class="button" id="clearButton" ><img width="25" height="25" style="fill: #cccccc;" src="images/broom-solid.svg" alt="Clear"></button>
+
+        <input class="button" style="width:30px; height:30px; padding: 10px" type="color" id="colorPicker" value="#4DCCFF"/>
+
     </div>
 </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<link rel = "stylesheet" type = "text/css" href = "style.css"/>
 <script src="js/gl-matrix-min.js"></script>
 <script src="js/preloadjs-0.6.2.min.js"></script>
 <script src="js/assetUtils.js"></script>
@@ -110,7 +111,7 @@
             scene.initCamera();
             scene.initLights();
             
-            webGLUtils.clearScreen([0.8,0.8,0.8,1.0]);
+            webGLUtils.clearScreen([0.9,0.9,0.9,1.0]);
 
             if(canvas.getMode()=='create'){
                 //show path

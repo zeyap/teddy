@@ -82,7 +82,7 @@ const canvas = (()=>{
             }
             
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.05)
+            algorithm.Equalize(equalizedPath,path,0.02)
             
             scene.buildObject(equalizedPath);
             setMode('paint');
