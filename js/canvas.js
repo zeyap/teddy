@@ -44,9 +44,7 @@ const canvas = (()=>{
 
         const [x,y] = scene.getNDCxy(e.clientX,e.clientY,clientRect);
 
-        if(mode === 'create'){
-            stroke = stroke.concat([x,y,0])
-        }
+        stroke = stroke.concat([x,y,0])
 
     }
 
@@ -60,33 +58,37 @@ const canvas = (()=>{
                 stroke = [];
                 return;
             }
-            
-            var path = [];
+
+            var path = []; // stroke projected onto image plane
             for(let i=0;i<stroke.length;i+=3){
                 const x = stroke[3*i],y = stroke[3*i+1];
-                const l0 = scene.NDCToWorld(vec4.fromValues(x,y,1,1))
-                const l1 = scene.NDCToWorld(vec4.fromValues(x,y,-1,1))
-                const rayDir = vec3.create();
-                vec3.subtract(rayDir,l1,l0);
-                vec3.normalize(rayDir,rayDir)
+                
+                const ray = scene.getRay(x,y)
 
                 const planeNormal = vec3.fromValues(0,0,1);
                 const planePoint = vec3.fromValues(0,0,0);//near
-                const p0Minusl0 = vec3.create();
-                vec3.subtract(p0Minusl0,planePoint,l0)
-                const t = vec3.dot(p0Minusl0,planeNormal)/vec3.dot(rayDir,planeNormal)
-                const intersectp = vec3.create()
-                vec3.scaleAndAdd(intersectp,l0,rayDir,t)
-                
+                const intersectp = scene.rayPlaneIntersect(ray, planeNormal, planePoint).p
                 path.push(intersectp)
             }
-            
+
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.02)
+            algorithm.Equalize(equalizedPath,path,0.1)
             
             scene.buildObject(equalizedPath);
             setMode('paint');
+        } else if(mode==='paint'){
+            const path = [];
+            for(let i=0;i<stroke.length;i+=3){
+                const x = stroke[3*i],y = stroke[3*i+1];
+                path.push(vec3.fromValues(x,y,0))
+            }
+            
+            const equalizedPath = [];
+            algorithm.Equalize(equalizedPath,path,0.1)
+
+            scene.cut(path)
         }
+        stroke = []
     }
 
     function setMode(newMode){

@@ -113,12 +113,10 @@
             
             webGLUtils.clearScreen([0.9,0.9,0.9,1.0]);
 
-            if(canvas.getMode()=='create'){
-                //show path
-                webGLUtils.drawLine(canvas.getStroke(),'program_line',{},{
-                    positionAttributeId:'vert_position',
-                })
-            }
+            //show stroke
+            webGLUtils.drawLine(canvas.getStroke(),'program_line',{},{
+                positionAttributeId:'vert_position',
+            })
 
             if(canvas.getMode()!=='create'){
                 const wireframe = false;

@@ -70,6 +70,11 @@ const _pruneTrianglesAndElevateVertices = ()=>{
 
         // pruning
         const prunedTriangles = [];
+        /*{
+            vertIds:[], 
+            spineEdges:[] edges connecting spine and external vertices
+        }
+        */
         const triangleDeleted = [];
         const spineEndpointsId = [];
         const spineEndpointsTriangleId = [];
@@ -155,8 +160,8 @@ const _pruneTrianglesAndElevateVertices = ()=>{
                     interiorEdge = (triangle.interiorEdges[0][0]===inEdgeV1Id&&triangle.interiorEdges[0][1]===inEdgeV2Id)?triangle.interiorEdges[1]:triangle.interiorEdges[0];
                     
                 }
-                // retriangulate
-                
+
+                // retriangulate the fan at terminal
                 
                 verts.push(semicircleCenter)
                 spineEndpointsId.push(verts.length-1)
@@ -175,11 +180,15 @@ const _pruneTrianglesAndElevateVertices = ()=>{
                 }
             }
         }
-        
+
+        // create spine by connecting interior edge centers
+        // const segmentsOnSpine = [];
+
         for(let i=0;i<spineEndpointsId.length;i++){
             
             var nextTriangleIds = [spineEndpointsTriangleId[i]];
             var startVertIds = [spineEndpointsId[i]];
+            
             while(nextTriangleIds.length>0){
                 
                 const triangleId = nextTriangleIds.shift();
@@ -219,6 +228,8 @@ const _pruneTrianglesAndElevateVertices = ()=>{
                     addInteriorExteriorPair(startVertId, e[1],interiorVerts)
                     addInteriorExteriorPair(verts.length-1, e[1],interiorVerts)
 
+                    // segmentsOnSpine.push([startVertId,verts.length-1])
+
                     // add adjacent triangle to the queue
 
                     const nextId = edgeToTriangle[e[0]][e[1]][0]^edgeToTriangle[e[0]][e[1]][1]^triangleId;
@@ -239,6 +250,7 @@ const _pruneTrianglesAndElevateVertices = ()=>{
                         
                     }
                 }
+
                 if(triangle.type === 'S'){
                     const eEdge = triangle.externalEdges[0];
                     prunedTriangles.push({
@@ -284,8 +296,9 @@ const _pruneTrianglesAndElevateVertices = ()=>{
             avgDist/=n;
             verts[inVId][2] = -0.5*avgDist;
         }
+        // TODO: smooth z coordinate of interiorVerts
 
-        // turn each spine edge into quarter oval
+        // subdivide: turn each edge connecting spine vertex & external vertex into quarter oval
         const divTriangles = []
         const triangleNum = triangles.length
         for(let i=0;i<triangleNum;i++){
@@ -296,23 +309,27 @@ const _pruneTrianglesAndElevateVertices = ()=>{
                 
                 const e = triangle.spineEdges[j];
                 p[j] = [];
-                p[j][0] = e[0];
-                p[j][4] = e[1];
+                p[j][0] = e[0];//interior
+                p[j][4] = e[1];//external
+
                 if(interiorVerts[e[0]][e[1]].length>0){
                     p[j][1] = interiorVerts[e[0]][e[1]][0]
                     p[j][2] = interiorVerts[e[0]][e[1]][1]
                     p[j][3] = interiorVerts[e[0]][e[1]][2]
                 }else{
-                    
-                    const b = verts[p[j][0]][2]
+
+                    const b = verts[e[0]][2]
+
                     const p2 = getEdgeCenter(verts[p[j][0]],verts[p[j][4]]);
                     p2[2] = b*Math.sqrt(3)/2;
                     verts.push(p2)
                     p[j][2] = verts.length-1
+
                     const p1 = getEdgeCenter(verts[p[j][0]],verts[p[j][2]]);
                     p1[2] = b*Math.sqrt(15)/4;
                     verts.push(p1)
                     p[j][1] = verts.length-1
+
                     const p3 = getEdgeCenter(verts[p[j][2]],verts[p[j][4]])
                     p3[2] = b*Math.sqrt(7)/4;
                     verts.push(p3)

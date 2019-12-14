@@ -1,6 +1,17 @@
 const algorithm = (()=>{
+    function computeNormal(A, B, C){
+        //ccw order
+        const normal = vec3.create()
+        const BmA = vec3.create()
+        vec3.subtract(BmA, B, A)
+        const CmA = vec3.create()
+        vec3.subtract(CmA, C, A)
+        vec3.cross(normal, BmA, CmA)
+        vec3.normalize(normal, normal)
+        return normal;
+    }
 
-    function createNormals(viewDir, triangles, verts){
+    function createNormalsAndEnforceCCW(viewDir, triangles, verts){
         const normals = [];
         for(let i=0;i<verts.length;i++){
             if(normals[i]!=null)continue;
@@ -8,21 +19,21 @@ const algorithm = (()=>{
         }
 
         for(let i=0;i<triangles.length;i++){
-            const normal = vec3.fromValues(0,0,0);
             const vertIds = triangles[i].vertIds;
-            for(let j=0;j<vertIds.length;j++){
-                vec3.add(normal, normal, verts[vertIds[j]])
+            
+            const normal = computeNormal(verts[vertIds[0]],verts[vertIds[1]],verts[vertIds[2]])
+            if(vec3.dot(viewDir,normal)<0){
+                vec3.scale(normal, normal, -1)
+                
+                //switch vert 1 and 2
+                const temp = triangles[i].vertIds[0]
+                triangles[i].vertIds[0] = triangles[i].vertIds[1]
+                triangles[i].vertIds[1] = temp
             }
-            vec3.normalize(normal, normal)
-            // vec3.scale(normal, normal, -1)
             
             for(let j=0;j<vertIds.length;j++){
                 vec3.add(normals[vertIds[j]],normals[vertIds[j]],normal);
             }
-        }
-
-        for(let i=0;i<verts.length;i++){
-            vec3.normalize(normals[i],normals[i]);
         }
         
         return normals;
@@ -49,6 +60,7 @@ const algorithm = (()=>{
                 vertIds:[triiVerts[0]+vertsNum,triiVerts[1]+vertsNum,triiVerts[2]+vertsNum]
             }
         }
+       
     }
 
     return {
@@ -56,7 +68,8 @@ const algorithm = (()=>{
         Equalize: _Equalize(),
         Delaunay: _Delaunay(),
         pruneTrianglesAndElevateVertices: _pruneTrianglesAndElevateVertices(),
-        createNormals,
+        createNormalsAndEnforceCCW,
+        computeNormal,
         drawBackface,
     }
 })()
