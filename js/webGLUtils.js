@@ -192,7 +192,6 @@ const webGLUtils = (function(){
 
         drawShape: function(vertices, indices, textureUnits, programId, uniforms, {
             positionAttributeId,
-            barycentricAttributeId,
             textureAttributeId,
             normalAttributeId,
         }, wireframe){

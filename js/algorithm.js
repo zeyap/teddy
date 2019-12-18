@@ -11,8 +11,8 @@ const algorithm = (()=>{
         return normal;
     }
 
-    function createNormalsAndEnforceCCW(viewDir, triangles, verts){
-        const normals = [];
+    function createNormalsAndEnforceCCW(viewDir, triangles, verts, normals){
+        
         for(let i=0;i<verts.length;i++){
             if(normals[i]!=null)continue;
             normals[i] = vec3.fromValues(0,0,0);
@@ -22,13 +22,17 @@ const algorithm = (()=>{
             const vertIds = triangles[i].vertIds;
             
             const normal = computeNormal(verts[vertIds[0]],verts[vertIds[1]],verts[vertIds[2]])
-            if(vec3.dot(viewDir,normal)<0){
-                vec3.scale(normal, normal, -1)
+
+            if(viewDir!=null){
+                if(vec3.dot(viewDir,normal)<0){
                 
-                //switch vert 1 and 2
-                const temp = triangles[i].vertIds[0]
-                triangles[i].vertIds[0] = triangles[i].vertIds[1]
-                triangles[i].vertIds[1] = temp
+                    //switch vert 1 and 2
+                    const temp = triangles[i].vertIds[0]
+                    triangles[i].vertIds[0] = triangles[i].vertIds[1]
+                    triangles[i].vertIds[1] = temp
+
+                    vec3.scale(normal, normal, -1)
+                }
             }
             
             for(let j=0;j<vertIds.length;j++){
@@ -57,7 +61,7 @@ const algorithm = (()=>{
         for(let i=0;i<triangleNum;i++){
             const triiVerts = triangles[i].vertIds;
             triangles[triangleNum+i] = {
-                vertIds:[triiVerts[0]+vertsNum,triiVerts[1]+vertsNum,triiVerts[2]+vertsNum]
+                vertIds:[triiVerts[2]+vertsNum,triiVerts[1]+vertsNum,triiVerts[0]+vertsNum]//ccw
             }
         }
        

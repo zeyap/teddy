@@ -3,7 +3,7 @@ const canvas = (()=>{
     var mouseDown = false;
     var mode = 'create'//paint, extrude, cut
     var color = vec4.fromValues(0.3,0.8,1.0,1.0);
-    var stroke = [];
+    var stroke = [];// trajectory in NDC
     
     function onClear(){
         scene.clearObject();
@@ -72,7 +72,7 @@ const canvas = (()=>{
             }
 
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.1)
+            algorithm.Equalize(equalizedPath,path,0.05)
             
             scene.buildObject(equalizedPath);
             setMode('paint');
@@ -84,9 +84,9 @@ const canvas = (()=>{
             }
             
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.1)
+            algorithm.Equalize(equalizedPath,path,0.01)
 
-            scene.cut(path)
+            scene.cut(equalizedPath)
         }
         stroke = []
     }

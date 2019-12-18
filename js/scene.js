@@ -79,6 +79,19 @@ const scene = (()=>{
         object.indices = [];
     }
 
+    function rebuildObjectFromPrimitiveList(){
+        var outputVertices = [];
+        for(let i=0;i<verticesList.length;i++){
+            outputVertices = outputVertices.concat([verticesList[i][0],verticesList[i][1],verticesList[i][2],
+            normalsList[i][0],normalsList[i][1],normalsList[i][2]])
+        }
+
+        const outputIndices = trianglesList.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
+
+        object.vertices = outputVertices;
+        object.indices = outputIndices;
+    }
+
     function buildObject(equalizedPath){
         const triangles = algorithm.Delaunay([...equalizedPath]);
         
@@ -86,24 +99,16 @@ const scene = (()=>{
         
         const viewDir = vec3.create()
         vec3.subtract(viewDir,focal,eye)
-        const normals = algorithm.createNormalsAndEnforceCCW(viewDir, prunedTriangles, equalizedPath);
+        const normals = [];
+        algorithm.createNormalsAndEnforceCCW(viewDir, prunedTriangles, equalizedPath,normals);
         
         algorithm.drawBackface(prunedTriangles, equalizedPath, normals);
 
-        var outputVertices = [];
-        for(let i=0;i<equalizedPath.length;i++){
-            
-            outputVertices = outputVertices.concat([equalizedPath[i][0],equalizedPath[i][1],equalizedPath[i][2],
-            normals[i][0],normals[i][1],normals[i][2]])
-        }
-
-        const outputIndices = prunedTriangles.reduce((accum,tri)=>accum.concat([...tri.vertIds]),[]);
-
-        object.vertices = outputVertices;
-        object.indices = outputIndices;
         trianglesList = prunedTriangles;
         verticesList = equalizedPath;
         normalsList = normals;
+
+        rebuildObjectFromPrimitiveList()
     }
 
     function getNDCxy(clientX,clientY,clientRect){
@@ -122,7 +127,15 @@ const scene = (()=>{
         const invViewMat = mat4.create();
         mat4.invert(invViewMat, view.viewMat);
         vec4.transformMat4(posWorld,posCam,invViewMat)
-        return vec3.fromValues(posWorld[0],posWorld[1], posWorld[2])
+        return vec3.fromValues(posWorld[0]/posWorld[3],posWorld[1]/posWorld[3], posWorld[2]/posWorld[3])
+    }
+
+    function worldToNDC(posWorld3){
+        const posWorld = vec4.fromValues(posWorld3[0],posWorld3[1],posWorld3[2],1.0)
+        const posNDC = vec4.create()
+        vec4.transformMat4(posNDC,posWorld,view.viewMat)
+        vec4.transformMat4(posNDC,posNDC,view.projMat)
+        return vec3.fromValues(posNDC[0]/posNDC[3],posNDC[1]/posNDC[3], posNDC[2]/posNDC[3])
     }
 
     function getRay(x,y){
@@ -189,68 +202,197 @@ const scene = (()=>{
         }
     }
 
+    function pointToSegmentDistance(p, p1,p2){
+        const dp1 = vec3.distance(p,p1)
+        const dp2 = vec3.distance(p,p2)
+        const segVec = vec3.create()
+        vec3.subtract(segVec,p2,p1)
+        vec3.normalize(segVec,segVec)
+        const p1p = vec3.fromValues(p[0]-p1[0],p[1]-p1[1],p[2]-p1[3])
+        const cosTheta = vec3.dot(segVec,p1p)/vec3.length(p1p)
+        const dLine = vec3.length(p1p)*Math.sqrt(1-cosTheta*cosTheta)
+        if(dLine<Math.min(dp1,dp2)){
+            return Math.min(dp1,dp2)
+        }else{
+            return dLine;
+        }
+    }
+
     function cut(path){
         const newTriangles = [];
         const newNormals=[]
-        for(let i=0;i<path.length-1;i++){
-            const ray1 = getRay(path[i][0],path[i][1]);
-            const ray2 = getRay(path[i+1][0],path[i+1][1]);
-            const intersects1 = [];
-            const intersects2 = [];
+        const intersects = [];// only store first 2 intersects, with front surface and back surface
+        const trianglesNearestSegment = [];// triangle is deleted if it is in the left side of its nearest segment on polyline
+        var numIntersects = 0;
+        var isCutLineComplete = false;
+        
+        for(let i=0;i<path.length;i++){
+            const ray = getRay(path[i][0],path[i][1]);
+            const newIntersects = [];
+            
             for(let j=0;j<trianglesList.length;j++){
                 const v1 = verticesList[trianglesList[j].vertIds[0]]
                 const v2 = verticesList[trianglesList[j].vertIds[1]]
                 const v3 = verticesList[trianglesList[j].vertIds[2]]
                 const normal = algorithm.computeNormal(v1, v2, v3)
                 
-                const intersect1 = rayTriangleIntersect(ray1, v1, v2, v3, normal);
-                if(intersect1!=null){
-                    intersects1.push(intersect1)
-                }
-
-                const intersect2 = rayTriangleIntersect(ray2, v1, v2, v3, normal);
-                if(intersect2!=null){
-                    intersects2.push(intersect2)
-                }
+                const intersect = rayTriangleIntersect(ray, v1, v2, v3, normal);
                 
-            }
-            intersects1.sort((i1,i2)=>{
-                if(i1.t<i2.t){
-                    return -1;
-                }else if(i1.t>i2.t){
-                    return 1;
-                }else{
-                    return 0
-                }
-            })
-            intersects2.sort((i1,i2)=>{
-                if(i1.t<i2.t){
-                    return -1;
-                }else if(i1.t>i2.t){
-                    return 1;
-                }else{
-                    return 0
-                }
-            })
-            const epsilon = 0.05
-            for(let j=0;j<intersects1.length-1;j++){
-                if(intersects1[j+1].t-intersects1[j].t<=epsilon){
-                    intersects1.splice(j+1,1)
+                if(intersect!=null){
+                    intersect.triangleId = j
+                    if(vec3.dot(ray.dir,normal)<0){ 
+                        // front face
+                        if(newIntersects[0]==null){
+                            newIntersects[0]=intersect;
+                            numIntersects++
+                        }
+                    }else if(vec3.dot(ray.dir,normal)>0){// back face
+                        if(newIntersects[1]==null){
+                            newIntersects[1]=intersect
+                            numIntersects++
+                        }
+                    }
                 }
             }
-            for(let j=0;j<intersects2.length-1;j++){
-                if(intersects2[j+1].t-intersects2[j].t<=epsilon){
-                    intersects2.splice(j+1,1)
-                }
-            }
-            //sew together
-            if(intersects1.length===2&&intersects2.length===2){
-
-                // newTriangles.push()
+            
+            intersects.push(newIntersects)
+            if(i==path.length-1){
+                continue;
             }
             
         }
+        if(numIntersects==0 || intersects[intersects.length-1].length>0){
+            return;
+        }
+        
+        //calculate centroid of triangles 
+        //& find nearest segment on polyline
+        
+        for(let j=0;j<trianglesList.length;j++){
+            if(trianglesList[j].centroid==null){
+                trianglesList[j].centroid = triangleCentroid(trianglesList[j].vertIds);
+            }
+        }
 
+        for(let i=0;i<path.length-1;i++){
+            // distance to this segment
+            const p1 = NDCToWorld(vec4.fromValues(path[i][0],path[i][1],0,1));
+            const p2 = NDCToWorld(vec4.fromValues(path[i+1][0],path[i+1][1],0,1));
+
+            for(let j=0;j<trianglesList.length;j++){
+            
+                const c = trianglesList[j].centroid
+                const v1 = verticesList[trianglesList[j].vertIds[0]],
+                v2 = verticesList[trianglesList[j].vertIds[1]],
+                v3 = verticesList[trianglesList[j].vertIds[2]];
+                
+                const dists = [
+                    pointToSegmentDistance(c,p1,p2),
+                    pointToSegmentDistance(v1,p1,p2),
+                    pointToSegmentDistance(v2,p1,p2),
+                    pointToSegmentDistance(v3,p1,p2)];
+                            // dist to segment
+                const dist = Math.min(dists)
+
+                if(trianglesNearestSegment[j]==null || dist<trianglesNearestSegment[j].dist){
+                    trianglesNearestSegment[j]={
+                        dist,
+                        id:i
+                    }
+                }
+
+            }
+        }
+        
+
+        for(let i=0;i<trianglesList.length;i++){
+            const id = trianglesNearestSegment[i].id
+            const ray1 = getRay(path[id][0],path[id][1])
+            const ray2 = getRay(path[id+1][0],path[id+1][1])
+            const planeN = vec3.create()
+            vec3.cross(planeN,ray1.dir,ray2.dir)
+            vec3.normalize(planeN,planeN)
+
+            const c = trianglesList[i].centroid
+            const v1 = verticesList[trianglesList[i].vertIds[0]],
+            v2 = verticesList[trianglesList[i].vertIds[1]],
+            v3 = verticesList[trianglesList[i].vertIds[2]];
+
+            const cMinP0 = vec3.create()
+            vec3.subtract(cMinP0,c,ray1.o)
+            const v1MinP0 = vec3.create()
+            vec3.subtract(v1MinP0,v1,ray1.o)
+            const v2MinP0 = vec3.create()
+            vec3.subtract(v2MinP0,v2,ray1.o)
+            const v3MinP0 = vec3.create()
+            vec3.subtract(v3MinP0,v3,ray1.o)
+            
+            const dists = [
+                        vec3.dot(planeN,cMinP0),
+                        vec3.dot(planeN,v1MinP0),
+                        vec3.dot(planeN,v2MinP0),
+                        vec3.dot(planeN,v3MinP0)];
+                        // dot prod with the plane normal
+
+            if(dists[0]<0||dists[1]<0||dists[2]<0||dists[3]<0){// segment is cw and centroid is left to the segment
+                trianglesList[i] = undefined
+            }
+        }
+
+        for(let i=0;i<trianglesList.length;i++){
+            if(trianglesList[i]==null){
+                trianglesList.splice(i,1)
+                i--
+            }
+        }
+
+        //sew together
+        var newVertices = [];
+        for(let i=0;i<intersects.length-1;i++){
+            if(intersects[i][0]&&intersects[i][1]){
+                newVertices.push(intersects[i][0].p)
+                newVertices.push(intersects[i][1].p)
+                
+                // trianglesList[intersects[i][0].triangleId]=undefined
+                // trianglesList[intersects[i][1].triangleId]=undefined
+            }else{
+                if(newVertices.length>0){
+                    //sew
+                    const starti = verticesList.length;
+                    verticesList = verticesList.concat(newVertices)
+                    const endi = verticesList.length;
+                    
+                    for(let j=starti;j<endi-3;j+=2){
+                        //f1:j b1:j+1 f2:j+2 b2:j+3
+                        trianglesList.push({
+                            vertIds:[j,j+1,j+2]
+                        })
+                        trianglesList.push({
+                            vertIds:[j+3,j+2,j+1]
+                        })
+                    }
+                    newVertices = [];
+                }
+            }
+        }
+
+        algorithm.createNormalsAndEnforceCCW(null, trianglesList, verticesList, normalsList)
+
+        rebuildObjectFromPrimitiveList()
+
+    }
+
+    function triangleCentroid(vertIds){
+        const x1=verticesList[vertIds[0]][0], 
+            x2=verticesList[vertIds[1]][0], 
+            x3=verticesList[vertIds[2]][0], 
+            y1=verticesList[vertIds[0]][1], 
+            y2=verticesList[vertIds[1]][1],
+            y3=verticesList[vertIds[2]][1],
+            z1=verticesList[vertIds[0]][2], 
+            z2=verticesList[vertIds[1]][2],
+            z3=verticesList[vertIds[2]][2];
+        return vec3.fromValues((x1+x2+x3)/3,(y1+y2+y3)/3,(x1+x2+x3)/3)
     }
 
     

@@ -100,7 +100,6 @@
             attributes:[
                 {name:'vert_position'},
                 {name:'vert_normal'},
-                {name:'vert_barycentric'}
             ]
         })
 
@@ -129,8 +128,7 @@
                     'xform_modelMat':scene.view.modelMat,
                     'lightPos':scene.view.lightPos,
                     'color':canvas.getColor(),
-                }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal',
-                barycentricAttributeId:'vert_barycentric'},wireframe)
+                }, {positionAttributeId:'vert_position',normalAttributeId:'vert_normal'},wireframe)
             }
             
             window.requestAnimationFrame(updateWebGL);
