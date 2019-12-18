@@ -2,15 +2,25 @@ const canvas = (()=>{
     var clientRect = webglCanvas.getBoundingClientRect();
     var mouseDown = false;
     var mode = 'create'//paint, extrude, cut
-    var color = vec4.fromValues(0.3,0.8,1.0,1.0);
+    var color = vec4.fromValues(1.0,0.6,0.1,1.0);
     var stroke = [];// trajectory in NDC
+    var showWireframe = false
+    var originalObjectPath = [];
     
     function onClear(){
         scene.clearObject();
         scene.resetCamera();
+        originalObjectPath = [];
         mouseDown = false;
-        stroke = [];
         setMode('create');
+    }
+
+    function onUndo(){
+        if(mode==='create'){
+            return;
+        }
+        
+        scene.buildObject(originalObjectPath)
     }
 
     function getStroke(){
@@ -65,14 +75,18 @@ const canvas = (()=>{
                 
                 const ray = scene.getRay(x,y)
 
-                const planeNormal = vec3.fromValues(0,0,1);
-                const planePoint = vec3.fromValues(0,0,0);//near
+                const imgPlane = scene.getImagePlane();
+                const planeNormal = imgPlane.n;
+                const planePoint = imgPlane.p;//near
                 const intersectp = scene.rayPlaneIntersect(ray, planeNormal, planePoint).p
                 path.push(intersectp)
             }
 
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.05)
+            algorithm.Equalize(equalizedPath,path,0.08)
+            for(let i=0;i<equalizedPath.length;i++){
+                originalObjectPath.push(equalizedPath[i])
+            }
             
             scene.buildObject(equalizedPath);
             setMode('paint');
@@ -84,7 +98,7 @@ const canvas = (()=>{
             }
             
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.01)
+            algorithm.Equalize(equalizedPath,path,0.08)
 
             scene.cut(equalizedPath)
         }
@@ -108,6 +122,50 @@ const canvas = (()=>{
         scene.setRatio(clientRect.width/clientRect.height);
     }
 
+    function getReferenceDotPositions(){
+        const dotPositions = []
+        const pixstep=70
+        
+        const stepx = 2/(clientRect.height/pixstep)
+        const stepy = 2/(clientRect.width/pixstep)
+
+        const z = 0.9
+        
+        for(let c=-stepx/2;c>-1;c-=stepx){
+            for(let r=stepy/2;r<1;r+=stepy){
+                dotPositions.push([r,c,z])
+            }
+            for(let r=-stepy/2;r>-1;r-=stepy){
+                dotPositions.push([r,c,z])
+            }
+        }
+
+        for(let c=stepx/2;c<1;c+=stepx){
+            for(let r=stepy/2;r<1;r+=stepy){
+                dotPositions.push([r,c,z])
+            }
+            for(let r=-stepy/2;r>-1;r-=stepy){
+                dotPositions.push([r,c,z])
+            }
+        }
+        
+        return dotPositions
+        
+    }
+
+    function onSwitchWireframe(){
+        showWireframe = !showWireframe;
+        const elem = document.getElementById('wireframeButtonIcon')
+        if(showWireframe){
+            elem.src = "images/border-all-solid.svg"
+        }else{
+            elem.src = "images/th-large-solid.svg"
+        }
+    }
+    function getIfShowWireframe(){
+        return showWireframe
+    }
+
     function initializeMouseEvents(){
         var webglCanvas = document.getElementById("webglCanvas");
         webglCanvas.addEventListener('mousedown', onMouseDown)
@@ -118,8 +176,14 @@ const canvas = (()=>{
         var clearButton = document.getElementById("clearButton");
         clearButton.addEventListener('click',onClear)
 
+        var undoButton = document.getElementById("undoButton");
+        undoButton.addEventListener('click',onUndo)
+
         var colorPicker = document.getElementById("colorPicker");
         colorPicker.addEventListener('change',onColorChange)
+
+        var wireframeButton = document.getElementById("wireframeButton");
+        wireframeButton.addEventListener('click',onSwitchWireframe);
 
         window.onresize = onResize
     }
@@ -129,5 +193,7 @@ const canvas = (()=>{
         getStroke,
         getColor,
         getMode,
+        getIfShowWireframe,
+        getReferenceDotPositions,
     };
 })()

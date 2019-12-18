@@ -201,6 +201,7 @@ const webGLUtils = (function(){
             if(vertices==null ||indices==null){
                 return;
             }
+            
             const shape = createShape(vertices, indices, textureUnits);
             const program =programs[programId];
             
@@ -252,6 +253,49 @@ const webGLUtils = (function(){
             gl.drawElements(gl.LINE_STRIP, shape.size, gl.UNSIGNED_SHORT, 0);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
             
+            gl.useProgram(null)
+        },
+
+        drawDots:function(dotPositions,programId,uniforms,
+        {
+            positionAttributeId,
+        }){
+            if(dotPositions==null||dotPositions.length===0){
+                return;
+            }
+            const r = 0.005
+            const vertsOnDot = [[r,-r],[r,r],[r,-r],[-r,-r]]
+            //tl, tr, br, bl
+
+            var vertices = []
+            var indices = []
+            
+            for(let i=0;i<dotPositions.length;i++){
+                const pt = dotPositions[i]
+
+                const floor = Math.floor(vertices.length/3)
+
+                vertices = vertices.concat([
+                    pt[0]+vertsOnDot[0][0],pt[1]+vertsOnDot[0][1],pt[2],
+                    pt[0]+vertsOnDot[1][0],pt[1]+vertsOnDot[1][1],pt[2],
+                    pt[0]+vertsOnDot[2][0],pt[1]+vertsOnDot[2][1],pt[2],
+                    pt[0]+vertsOnDot[3][0],pt[1]+vertsOnDot[3][1],pt[2],
+                ])
+                
+                indices.push(floor+1)
+                indices.push(floor+2)
+                indices.push(floor+3)
+                
+            }
+
+            const shape = createShape(vertices, indices, null);
+            
+            const program = programs[programId];
+
+            gl.useProgram(program);
+
+            drawTriangles(program, shape, positionAttributeId, null, null);
+
             gl.useProgram(null)
         },
 

@@ -71,6 +71,7 @@ const algorithm = (()=>{
         selfIntersect: _selfIntersect(),
         Equalize: _Equalize(),
         Delaunay: _Delaunay(),
+        cut: _cut(),
         pruneTrianglesAndElevateVertices: _pruneTrianglesAndElevateVertices(),
         createNormalsAndEnforceCCW,
         computeNormal,

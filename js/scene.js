@@ -19,6 +19,16 @@ const scene = (()=>{
     clientRect = webglCanvas.getBoundingClientRect();
     setRatio(clientRect.width/clientRect.height);
 
+    function getImagePlane(){
+        const n = vec3.create();
+        vec3.subtract(n,eye,focal);
+        const p = focal;
+        return {
+            n,
+            p,
+        }
+    }
+
     function setRatio(r){
         ratio = r;
     }
@@ -92,7 +102,15 @@ const scene = (()=>{
         object.indices = outputIndices;
     }
 
-    function buildObject(equalizedPath){
+    function buildObject(eqPath){
+        const currViewPoint = eye;
+        resetCamera()
+
+        const equalizedPath = []
+        for(let i=0;i<eqPath.length;i++){
+            equalizedPath.push(eqPath[i])
+        }
+
         const triangles = algorithm.Delaunay([...equalizedPath]);
         
         const prunedTriangles = algorithm.pruneTrianglesAndElevateVertices(triangles, equalizedPath)
@@ -100,6 +118,7 @@ const scene = (()=>{
         const viewDir = vec3.create()
         vec3.subtract(viewDir,focal,eye)
         const normals = [];
+
         algorithm.createNormalsAndEnforceCCW(viewDir, prunedTriangles, equalizedPath,normals);
         
         algorithm.drawBackface(prunedTriangles, equalizedPath, normals);
@@ -109,6 +128,7 @@ const scene = (()=>{
         normalsList = normals;
 
         rebuildObjectFromPrimitiveList()
+        eye = currViewPoint
     }
 
     function getNDCxy(clientX,clientY,clientRect){
@@ -202,30 +222,12 @@ const scene = (()=>{
         }
     }
 
-    function pointToSegmentDistance(p, p1,p2){
-        const dp1 = vec3.distance(p,p1)
-        const dp2 = vec3.distance(p,p2)
-        const segVec = vec3.create()
-        vec3.subtract(segVec,p2,p1)
-        vec3.normalize(segVec,segVec)
-        const p1p = vec3.fromValues(p[0]-p1[0],p[1]-p1[1],p[2]-p1[3])
-        const cosTheta = vec3.dot(segVec,p1p)/vec3.length(p1p)
-        const dLine = vec3.length(p1p)*Math.sqrt(1-cosTheta*cosTheta)
-        if(dLine<Math.min(dp1,dp2)){
-            return Math.min(dp1,dp2)
-        }else{
-            return dLine;
-        }
-    }
-
     function cut(path){
-        const newTriangles = [];
-        const newNormals=[]
+        
         const intersects = [];// only store first 2 intersects, with front surface and back surface
         const trianglesNearestSegment = [];// triangle is deleted if it is in the left side of its nearest segment on polyline
         var numIntersects = 0;
         var isCutLineComplete = false;
-        
         for(let i=0;i<path.length;i++){
             const ray = getRay(path[i][0],path[i][1]);
             const newIntersects = [];
@@ -287,10 +289,10 @@ const scene = (()=>{
                 v3 = verticesList[trianglesList[j].vertIds[2]];
                 
                 const dists = [
-                    pointToSegmentDistance(c,p1,p2),
-                    pointToSegmentDistance(v1,p1,p2),
-                    pointToSegmentDistance(v2,p1,p2),
-                    pointToSegmentDistance(v3,p1,p2)];
+                    algorithm.cut.pointToSegmentDistance(c,p1,p2),
+                    algorithm.cut.pointToSegmentDistance(v1,p1,p2),
+                    algorithm.cut.pointToSegmentDistance(v2,p1,p2),
+                    algorithm.cut.pointToSegmentDistance(v3,p1,p2)];
                             // dist to segment
                 const dist = Math.min(dists)
 
@@ -307,34 +309,7 @@ const scene = (()=>{
 
         for(let i=0;i<trianglesList.length;i++){
             const id = trianglesNearestSegment[i].id
-            const ray1 = getRay(path[id][0],path[id][1])
-            const ray2 = getRay(path[id+1][0],path[id+1][1])
-            const planeN = vec3.create()
-            vec3.cross(planeN,ray1.dir,ray2.dir)
-            vec3.normalize(planeN,planeN)
-
-            const c = trianglesList[i].centroid
-            const v1 = verticesList[trianglesList[i].vertIds[0]],
-            v2 = verticesList[trianglesList[i].vertIds[1]],
-            v3 = verticesList[trianglesList[i].vertIds[2]];
-
-            const cMinP0 = vec3.create()
-            vec3.subtract(cMinP0,c,ray1.o)
-            const v1MinP0 = vec3.create()
-            vec3.subtract(v1MinP0,v1,ray1.o)
-            const v2MinP0 = vec3.create()
-            vec3.subtract(v2MinP0,v2,ray1.o)
-            const v3MinP0 = vec3.create()
-            vec3.subtract(v3MinP0,v3,ray1.o)
-            
-            const dists = [
-                        vec3.dot(planeN,cMinP0),
-                        vec3.dot(planeN,v1MinP0),
-                        vec3.dot(planeN,v2MinP0),
-                        vec3.dot(planeN,v3MinP0)];
-                        // dot prod with the plane normal
-
-            if(dists[0]<0||dists[1]<0||dists[2]<0||dists[3]<0){// segment is cw and centroid is left to the segment
+            if(!algorithm.cut.isTriangleAbovePlane(trianglesList[i],path[id],path[id+1],verticesList,getRay)){
                 trianglesList[i] = undefined
             }
         }
@@ -409,6 +384,7 @@ const scene = (()=>{
 
         getNDCxy,
         getRay,
+        getImagePlane,
         rayPlaneIntersect,
 
         view,

@@ -17,11 +17,13 @@
 <div align="center">
     <canvas id="webglCanvas" style="width:100vw; height:100vh;" width=1000 height=1000></canvas>
     <div style="position: absolute; bottom:20px; right:20px;">
-        
+        <button class="button" id="wireframeButton" ><img id="wireframeButtonIcon" width="25" height="25" src="images/th-large-solid.svg" style="fill: #cccccc;" alt="ShowWireframe"></button>
+
         <button class="button" id="undoButton" ><img width="25" height="25" src="images/undo-solid.svg" style="fill: #cccccc;" alt="Undo"></button>
+
         <button class="button" id="clearButton" ><img width="25" height="25" style="fill: #cccccc;" src="images/broom-solid.svg" alt="Clear"></button>
 
-        <input class="button" style="width:30px; height:30px; padding: 10px" type="color" id="colorPicker" value="#4DCCFF"/>
+        <input class="button" style="width:30px; height:30px; padding: 10px" type="color" id="colorPicker" value="#ff9d1c"/>
 
     </div>
 </div>
@@ -34,6 +36,7 @@
 <script src="js/webGLUtils.js"></script>
 <script src="js/algorithms/Delaunay.js"></script>
 <script src="js/algorithms/Equalize.js"></script>
+<script src="js/algorithms/cut.js"></script>
 <script src="js/algorithms/pruneTrianglesAndElevateVertices.js"></script>
 <script src="js/algorithms/selfIntersect.js"></script>
 <script src="js/algorithm.js"></script>
@@ -70,7 +73,7 @@
 
         webGLUtils.createGlslProgram('program_line', data.vertexShaderLineText, data.fragmentShaderLineText, 
         {
-            uniforms:[],
+            uniforms:[{name:'color', type:'4fv'},],
             attributes:[
                 {name:'vert_position'},
             ]
@@ -82,6 +85,7 @@
                     {name:'xform_projMat', type:'Matrix4fv'},
                     {name:'xform_viewMat', type:'Matrix4fv'},
                     {name:'xform_modelMat', type:'Matrix4fv'},
+                    {name:'color', type:'4fv'},
                 ], 
                 attributes:[
                     {name:'vert_position'},
@@ -113,12 +117,19 @@
             webGLUtils.clearScreen([0.9,0.9,0.9,1.0]);
 
             //show stroke
-            webGLUtils.drawLine(canvas.getStroke(),'program_line',{},{
+            webGLUtils.drawLine(canvas.getStroke(),'program_line',{
+                'color':vec4.fromValues(1.0,1.0,1.0,1.0),
+            },{
+                positionAttributeId:'vert_position',
+            })
+            webGLUtils.drawDots(canvas.getReferenceDotPositions(),'program_line',{
+                'color':vec4.fromValues(1.0,1.0,1.0,1.0),
+            },{
                 positionAttributeId:'vert_position',
             })
 
             if(canvas.getMode()!=='create'){
-                const wireframe = false;
+                const wireframe = canvas.getIfShowWireframe();
                 
                 // show object
                 webGLUtils.drawShape(scene.object.vertices, scene.object.indices, {},
