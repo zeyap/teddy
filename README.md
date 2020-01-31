@@ -24,34 +24,7 @@ To detect self intersection in polyline, I used [Shamos-Hoey Algorithm](http://g
 
 To create a polyline with approximately uniform edge length, the program sample points along the trajectory by fixed distance, this distance is measured by treating all the segments along the trajectory as vectors, and adding up their lengths. The vertices on the result polyline is not necessarily from the original mouse trajectory. See `js/algorithms/Equalize.js`. 
 
-Below is a pseudocode of [YANG-H's implementation of Equalization](http://mattatz.org/works/teddy/https://github.com/YANG-H/Teddy).
-
-```
-Equalize (outputVerts, mousePositions, step, isClosed)
-	N = mousePositions.length
-	if isClosed: N = N+1
-	if mousePositions contains <=1 points: discard the trajectory
-	otherwise:
-		segmentLen = 0
-		lastAddedPoint=mousePositions[0]
-		outputVerts.add(lastAddedPoint)
-		for (i=0; i<N; i++):
-			newVec = mousePositions[i%len] - mousePositions[i-1]
-			newVecLen = |newVec|
-			if (segmentLen + newVecLen< step):
-				segmentLen += newVecLen
-				continue
-			//else
-			d = step - segmentLen
-			while (d<=newVecLen)
-				newPoint = mousePositions[i-1] + newVec.normalize()*d
-				outputVerts.add(newPoint)
-				lastAddedPoint = newPoint
-				segmentLen = newVecLen - d
-				d += step
-		//end for
-	//end if
- ```
+Here I referenced [YANG-H's implementation of Equalization](http://mattatz.org/works/teddy/https://github.com/YANG-H/Teddy).
 
 ### Constrained Delaunay Triangulation
 
