@@ -15,14 +15,6 @@ const canvas = (()=>{
         setMode('create');
     }
 
-    function onUndo(){
-        if(mode==='create'){
-            return;
-        }
-        
-        scene.buildObject(originalObjectPath)
-    }
-
     function getStroke(){
         return stroke;
     }
@@ -90,17 +82,6 @@ const canvas = (()=>{
             
             scene.buildObject(equalizedPath);
             setMode('paint');
-        } else if(mode==='paint'){
-            const path = [];
-            for(let i=0;i<stroke.length;i+=3){
-                const x = stroke[3*i],y = stroke[3*i+1];
-                path.push(vec3.fromValues(x,y,0))
-            }
-            
-            const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.05, false)
-
-            scene.cut(equalizedPath)
         }
         stroke = []
     }
@@ -172,6 +153,12 @@ const canvas = (()=>{
         return showWireframe
     }
 
+    function openInNewTab(url){
+        return ()=>{
+            window.open(url,'_blank');
+        }
+    }
+
     function initializeMouseEvents(){
         var webglCanvas = document.getElementById("webglCanvas");
         webglCanvas.addEventListener('mousedown', onMouseDown)
@@ -182,14 +169,18 @@ const canvas = (()=>{
         var clearButton = document.getElementById("clearButton");
         clearButton.addEventListener('click',onClear)
 
-        var undoButton = document.getElementById("undoButton");
-        undoButton.addEventListener('click',onUndo)
-
         var colorPicker = document.getElementById("colorPicker");
         colorPicker.addEventListener('change',onColorChange)
 
         var wireframeButton = document.getElementById("wireframeButton");
         wireframeButton.addEventListener('click',onSwitchWireframe);
+
+        var personalWebLink = document.getElementById("personalweblink");
+        personalWebLink.addEventListener('click',openInNewTab('http://zeyapeng.com/'));
+        var repositoryLink = document.getElementById("repositorylink");
+        repositoryLink.addEventListener('click',openInNewTab('https://github.com/zeyap/teddy'));
+        var researchLink = document.getElementById("researchlink");
+        researchLink.addEventListener('click',openInNewTab('https://www-ui.is.s.u-tokyo.ac.jp/~takeo/teddy/teddy.htm'));
 
         window.onresize = onResize
     }

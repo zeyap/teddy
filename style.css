@@ -6,3 +6,7 @@
     border: 0.5px solid #cccccc;
     margin: 0;
 }
+
+.pointer{
+    cursor:pointer;
+}
