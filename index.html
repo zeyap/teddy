@@ -122,7 +122,8 @@
             },{
                 positionAttributeId:'vert_position',
             })
-            webGLUtils.drawDots(canvas.getReferenceDotPositions(),'program_line',{
+            webGLUtils.drawDots(canvas.getReferenceDotPositions(),
+            canvas.getReferenceDotScales(),'program_line',{
                 'color':vec4.fromValues(1.0,1.0,1.0,1.0),
             },{
                 positionAttributeId:'vert_position',

@@ -1,5 +1,9 @@
 const _Equalize = ()=>{
-    function Equalize(outputVerts,mousePath,step){
+    function Equalize(outputVerts,mousePath,step, isClosed){
+        var N = mousePath.length
+        if(isClosed){
+            N = N+1
+        }
         if(mousePath.length<=1){
             
             return;
@@ -11,7 +15,7 @@ const _Equalize = ()=>{
         outputVerts.push(mousePath[0])
         var lastAddedPoint = mousePath[0];
         
-        for(let i=1;i<=mousePath.length;i++){
+        for(let i=1;i<N;i++){
             
             const newVec = vec3.create();
             vec3.subtract(newVec, mousePath[i%mousePath.length], mousePath[i-1]);

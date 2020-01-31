@@ -83,7 +83,7 @@ const canvas = (()=>{
             }
 
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.08)
+            algorithm.Equalize(equalizedPath,path,0.05, true)
             for(let i=0;i<equalizedPath.length;i++){
                 originalObjectPath.push(equalizedPath[i])
             }
@@ -98,7 +98,7 @@ const canvas = (()=>{
             }
             
             const equalizedPath = [];
-            algorithm.Equalize(equalizedPath,path,0.08)
+            algorithm.Equalize(equalizedPath,path,0.05, false)
 
             scene.cut(equalizedPath)
         }
@@ -124,7 +124,7 @@ const canvas = (()=>{
 
     function getReferenceDotPositions(){
         const dotPositions = []
-        const pixstep=70
+        const pixstep=50
         
         const stepx = 2/(clientRect.height/pixstep)
         const stepy = 2/(clientRect.width/pixstep)
@@ -151,6 +151,12 @@ const canvas = (()=>{
         
         return dotPositions
         
+    }
+
+    function getReferenceDotScales(){
+        const scalex = 300/clientRect.width
+        const scaley = 300/clientRect.height
+        return [scalex,scaley]
     }
 
     function onSwitchWireframe(){
@@ -195,5 +201,6 @@ const canvas = (()=>{
         getMode,
         getIfShowWireframe,
         getReferenceDotPositions,
+        getReferenceDotScales,
     };
 })()

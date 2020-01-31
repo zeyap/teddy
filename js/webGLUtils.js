@@ -256,7 +256,7 @@ const webGLUtils = (function(){
             gl.useProgram(null)
         },
 
-        drawDots:function(dotPositions,programId,uniforms,
+        drawDots:function(dotPositions,dotScales,programId,uniforms,
         {
             positionAttributeId,
         }){
@@ -264,7 +264,8 @@ const webGLUtils = (function(){
                 return;
             }
             const r = 0.005
-            const vertsOnDot = [[r,-r],[r,r],[r,-r],[-r,-r]]
+            const r1 = r*dotScales[0], r2 = r*dotScales[1]
+            const vertsOnDot = [[r1,-r2],[r1,r2],[-r1,r2],[-r1,-r2]]
             //tl, tr, br, bl
 
             var vertices = []
@@ -276,16 +277,20 @@ const webGLUtils = (function(){
                 const floor = Math.floor(vertices.length/3)
 
                 vertices = vertices.concat([
+                    
                     pt[0]+vertsOnDot[0][0],pt[1]+vertsOnDot[0][1],pt[2],
                     pt[0]+vertsOnDot[1][0],pt[1]+vertsOnDot[1][1],pt[2],
                     pt[0]+vertsOnDot[2][0],pt[1]+vertsOnDot[2][1],pt[2],
                     pt[0]+vertsOnDot[3][0],pt[1]+vertsOnDot[3][1],pt[2],
+                    
                 ])
                 
+                indices.push(floor+0)
                 indices.push(floor+1)
                 indices.push(floor+2)
+                indices.push(floor+0)
+                indices.push(floor+2)
                 indices.push(floor+3)
-                
             }
 
             const shape = createShape(vertices, indices, null);

@@ -73,7 +73,6 @@ const scene = (()=>{
         vec3.transformMat4(eye,eye,rotateCamY)
 
         mat4.lookAt(view.viewMat, eye, focal, up);
-        
     }
 
     function initLights(){
@@ -226,7 +225,6 @@ const scene = (()=>{
         
         const intersects = [];// only store first 2 intersects, with front surface and back surface
         const trianglesNearestSegment = [];// triangle is deleted if it is in the left side of its nearest segment on polyline
-        var numIntersects = 0;
         var isCutLineComplete = false;
         for(let i=0;i<path.length;i++){
             const ray = getRay(path[i][0],path[i][1]);
@@ -244,14 +242,12 @@ const scene = (()=>{
                     intersect.triangleId = j
                     if(vec3.dot(ray.dir,normal)<0){ 
                         // front face
-                        if(newIntersects[0]==null){
+                        if(newIntersects[0]==null||intersect.t<newIntersects[0].t){
                             newIntersects[0]=intersect;
-                            numIntersects++
                         }
                     }else if(vec3.dot(ray.dir,normal)>0){// back face
-                        if(newIntersects[1]==null){
+                        if(newIntersects[1]==null||intersect.t<newIntersects[1].t){
                             newIntersects[1]=intersect
-                            numIntersects++
                         }
                     }
                 }
@@ -263,7 +259,7 @@ const scene = (()=>{
             }
             
         }
-        if(numIntersects==0 || intersects[intersects.length-1].length>0){
+        if(intersects.length>0 && intersects[intersects.length-1].length>0){
             return;
         }
         
